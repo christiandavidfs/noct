@@ -1,18 +1,16 @@
 package dev.noct.launcher
 
+import android.app.ActivityManager
 import android.appwidget.AppWidgetHost
+import androidx.activity.compose.BackHandler
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,12 +22,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,11 +53,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,8 +64,6 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlin.math.abs
-import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Composable
@@ -72,37 +74,25 @@ fun HomeScreen(
     themeName: String?,
     widgetHost: AppWidgetHost,
     hostedWidgets: List<HostedWidget>,
+    editMode: Boolean,
+    onEnterEdit: () -> Unit,
+    onExitEdit: () -> Unit,
+    onMoveSection: (String, Int) -> Unit,
     onOpenDrawer: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenSync: () -> Unit,
     onRequestUsageAccess: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val thresholdPx = with(LocalDensity.current) { prefs.thresholdDp.dp.toPx() }
-    val edgePx = with(LocalDensity.current) { prefs.edgeWidthDp.dp.toPx() }
-    var recentIndex by rememberSaveable { mutableIntStateOf(0) }
-    var pendingName by remember { mutableStateOf<String?>(null) }
-    var switching by remember { mutableStateOf(false) }
     val battery = rememberBattery()
+    val context = LocalContext.current
+    var dismissed by remember { mutableStateOf<Set<String>>(emptySet()) }
+    val visibleRecents = recents.filterNot { it.packageName in dismissed }
 
-    fun switchRecent(direction: Int) {
-        if (switching) return
-        if (recents.isEmpty()) {
-            onOpenDrawer()
-            return
-        }
-        val count = recents.size
-        val next = Math.floorMod(recentIndex + direction, count)
-        recentIndex = next
-        val app = recents[next]
-        pendingName = app.label
-        switching = true
-        scope.launch {
-            delay(280)
-            AppRepository.launch(context, app.packageName)
-            pendingName = null
-            switching = false
+    fun closeRecent(app: AppEntry) {
+        dismissed = dismissed + app.packageName
+        runCatching {
+            val manager = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as ActivityManager
+            manager.killBackgroundProcesses(app.packageName)
         }
     }
 
@@ -117,18 +107,11 @@ fun HomeScreen(
                     )
                 )
             )
-            .homeGestures(
-                axis = prefs.axis,
-                invert = prefs.invert,
-                thresholdPx = thresholdPx,
-                edgeOnly = prefs.edgeOnly,
-                edgePx = edgePx,
-                onSwitchRecent = { switchRecent(it) },
-                onOpenDrawer = onOpenDrawer,
-            )
     ) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding(),
             contentPadding = PaddingValues(
                 start = 26.dp,
                 end = 26.dp,
@@ -137,50 +120,103 @@ fun HomeScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .clickable(onClick = onOpenSettings),
-                ) {
-                    if (prefs.showClock) {
-                        ClockWidget(clock24h = prefs.clock24h)
+            items(prefs.homeOrder, key = { it }) { section ->
+                val index = prefs.homeOrder.indexOf(section)
+                val canUp = index > 0
+                val canDown = index in 0 until prefs.homeOrder.lastIndex
+                when (section) {
+                    "clock" -> if (prefs.showClock) {
+                        EditableSection(
+                            title = "Reloj",
+                            section = section,
+                            editing = editMode,
+                            canUp = canUp,
+                            canDown = canDown,
+                            onMove = onMoveSection,
+                        ) {
+                            ClockWidget(
+                                clock24h = prefs.clock24h,
+                                onTap = onOpenSettings,
+                                onLongPress = onEnterEdit,
+                            )
+                        }
                     }
-                    if (prefs.showBattery) {
-                        Spacer(Modifier.height(10.dp))
-                        BatteryWidget(battery)
+
+                    "battery" -> if (prefs.showBattery) {
+                        EditableSection(
+                            title = "Batería",
+                            section = section,
+                            editing = editMode,
+                            canUp = canUp,
+                            canDown = canDown,
+                            onMove = onMoveSection,
+                        ) {
+                            BatteryWidget(battery)
+                        }
                     }
-                }
-            }
 
-            if (hostedWidgets.isNotEmpty()) {
-                items(hostedWidgets, key = { it.id }) { widget ->
-                    HostedWidgetView(
-                        host = widgetHost,
-                        widget = widget,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
-                    )
-                }
-            }
+                    "recents" -> if (prefs.showRecents) {
+                        EditableSection(
+                            title = "Apps en marcha",
+                            section = section,
+                            editing = editMode,
+                            canUp = canUp,
+                            canDown = canDown,
+                            onMove = onMoveSection,
+                        ) {
+                            RecentsCarousel(
+                                recents = visibleRecents,
+                                hasUsageAccess = hasUsageAccess,
+                                onRequestUsageAccess = onRequestUsageAccess,
+                                onOpenDrawer = onOpenDrawer,
+                                onClose = { closeRecent(it) },
+                            )
+                        }
+                    }
 
-            if (prefs.showRecents) {
-                item {
-                    RecentsWidget(
-                        recents = recents,
-                        hasUsageAccess = hasUsageAccess,
-                        edgeOnly = prefs.edgeOnly,
-                        onRequestUsageAccess = onRequestUsageAccess,
-                        onOpenDrawer = onOpenDrawer,
-                    )
-                }
-            }
+                    "widgets" -> if (hostedWidgets.isNotEmpty() || editMode) {
+                        EditableSection(
+                            title = "Widgets",
+                            section = section,
+                            editing = editMode,
+                            canUp = canUp,
+                            canDown = canDown,
+                            onMove = onMoveSection,
+                        ) {
+                            if (hostedWidgets.isEmpty()) {
+                                Text(
+                                    text = "Sin widgets · añádelos desde ajustes",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    hostedWidgets.forEach { widget ->
+                                        HostedWidgetView(
+                                            host = widgetHost,
+                                            widget = widget,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 2.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
 
-            if (prefs.showSync) {
-                item {
-                    SyncWidget(themeName = themeName, onOpenSync = onOpenSync)
+                    "sync" -> if (prefs.showSync) {
+                        EditableSection(
+                            title = "Tema",
+                            section = section,
+                            editing = editMode,
+                            canUp = canUp,
+                            canDown = canDown,
+                            onMove = onMoveSection,
+                        ) {
+                            SyncWidget(themeName = themeName, onOpenSync = onOpenSync)
+                        }
+                    }
                 }
             }
         }
@@ -195,9 +231,10 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "dos dedos · apps",
+                text = "apps",
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                modifier = Modifier.clickable(onClick = onOpenDrawer),
             )
             Box(
                 modifier = Modifier
@@ -208,40 +245,80 @@ fun HomeScreen(
                     .clickable(onClick = onOpenDrawer)
             )
             Text(
-                text = "ajustes",
+                text = if (editMode) "listo" else "ajustes",
                 fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-                modifier = Modifier.clickable(onClick = onOpenSettings),
+                color = if (editMode) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                },
+                modifier = Modifier.clickable(onClick = if (editMode) onExitEdit else onOpenSettings),
             )
-        }
-
-        AnimatedVisibility(
-            visible = pendingName != null,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(top = 8.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f))
-                    .padding(horizontal = 18.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = "→ ${pendingName ?: ""}",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
     }
 }
 
 @Composable
-private fun ClockWidget(clock24h: Boolean) {
+private fun EditableSection(
+    title: String,
+    section: String,
+    editing: Boolean,
+    canUp: Boolean,
+    canDown: Boolean,
+    onMove: (String, Int) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier = if (editing) {
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.16f))
+                .padding(10.dp)
+        } else {
+            Modifier
+        },
+    ) {
+        if (editing) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title.uppercase(),
+                    fontSize = 10.sp,
+                    letterSpacing = 1.5.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Row {
+                    IconButton(
+                        onClick = { onMove(section, -1) },
+                        enabled = canUp,
+                        modifier = Modifier.size(30.dp),
+                    ) {
+                        Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Subir")
+                    }
+                    IconButton(
+                        onClick = { onMove(section, 1) },
+                        enabled = canDown,
+                        modifier = Modifier.size(30.dp),
+                    ) {
+                        Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Bajar")
+                    }
+                }
+            }
+        }
+        content()
+    }
+}
+
+@Composable
+private fun ClockWidget(
+    clock24h: Boolean,
+    onTap: () -> Unit,
+    onLongPress: () -> Unit,
+) {
     var now by remember { mutableStateOf(LocalDateTime.now()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -253,18 +330,26 @@ private fun ClockWidget(clock24h: Boolean) {
     val time = now.format(DateTimeFormatter.ofPattern(pattern, Locale.getDefault()))
     val date = now.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.getDefault()))
 
-    Text(
-        text = time,
-        fontSize = 76.sp,
-        fontWeight = FontWeight.Thin,
-        color = MaterialTheme.colorScheme.onSurface,
-        lineHeight = 80.sp,
-    )
-    Text(
-        text = date.replaceFirstChar { it.uppercase() },
-        fontSize = 15.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { onTap() }, onLongPress = { onLongPress() })
+            },
+    ) {
+        Text(
+            text = time,
+            fontSize = 76.sp,
+            fontWeight = FontWeight.Thin,
+            color = MaterialTheme.colorScheme.onSurface,
+            lineHeight = 80.sp,
+        )
+        Text(
+            text = date.replaceFirstChar { it.uppercase() },
+            fontSize = 15.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 private data class BatteryInfo(val level: Int, val charging: Boolean)
@@ -344,21 +429,32 @@ private fun BatteryWidget(battery: BatteryInfo) {
 }
 
 @Composable
-private fun RecentsWidget(
+private fun RecentsCarousel(
     recents: List<AppEntry>,
     hasUsageAccess: Boolean,
-    edgeOnly: Boolean,
     onRequestUsageAccess: () -> Unit,
     onOpenDrawer: () -> Unit,
+    onClose: (AppEntry) -> Unit,
 ) {
     val context = LocalContext.current
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = "EN MARCHA",
-            fontSize = 10.sp,
-            letterSpacing = 1.5.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "EN MARCHA",
+                fontSize = 10.sp,
+                letterSpacing = 1.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            )
+            Text(
+                text = if (recents.isEmpty()) "" else "desliza · toca",
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+            )
+        }
         if (recents.isEmpty()) {
             Text(
                 text = if (hasUsageAccess) "Sin apps recientes" else "Sin acceso de uso",
@@ -374,32 +470,58 @@ private fun RecentsWidget(
                 },
             )
         } else {
-            recents.take(5).forEachIndexed { index, app ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+            val virtualPages = 10000
+            val pagerState = rememberPagerState(initialPage = virtualPages / 2) {
+                virtualPages
+            }
+            HorizontalPager(
+                state = pagerState,
+                pageSpacing = 12.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(164.dp),
+            ) { page ->
+                val app = recents[page % recents.size]
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { AppRepository.launch(context, app.packageName) }
-                        .padding(vertical = 2.dp),
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.30f)),
                 ) {
-                    Text(
-                        text = "${index + 1}",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-                        modifier = Modifier.width(20.dp),
-                    )
-                    Text(
-                        text = app.label,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable { AppRepository.launch(context, app) }
+                            .padding(horizontal = 20.dp, vertical = 18.dp),
+                        verticalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = app.label,
+                            fontSize = 30.sp,
+                            lineHeight = 34.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(end = 36.dp),
+                        )
+                        Text(
+                            text = "${(pagerState.currentPage % recents.size) + 1} / ${recents.size}",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                        )
+                    }
+                    IconButton(
+                        onClick = { onClose(app) },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp),
+                    ) {
+                        Icon(
+                            Icons.Outlined.Close,
+                            contentDescription = "Cerrar app",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+                        )
+                    }
                 }
             }
-            Text(
-                text = if (edgeOnly) "Dos dedos desde el borde" else "Dos dedos para cambiar",
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-            )
         }
     }
 }
@@ -430,55 +552,5 @@ private fun SyncWidget(themeName: String?, onOpenSync: () -> Unit) {
             fontSize = 10.sp,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
         )
-    }
-}
-
-private fun Modifier.homeGestures(
-    axis: SwipeAxis,
-    invert: Boolean,
-    thresholdPx: Float,
-    edgeOnly: Boolean,
-    edgePx: Float,
-    onSwitchRecent: (Int) -> Unit,
-    onOpenDrawer: () -> Unit,
-): Modifier = pointerInput(axis, invert, thresholdPx, edgeOnly, edgePx) {
-    awaitEachGesture {
-        val down = awaitFirstDown(requireUnconsumed = false)
-        val start = down.position
-        val nearEdge = when (axis) {
-            SwipeAxis.HORIZONTAL -> start.x <= edgePx || start.x >= size.width - edgePx
-            SwipeAxis.VERTICAL -> start.y <= edgePx || start.y >= size.height - edgePx
-        }
-        val twoFingerAllowed = !edgeOnly || nearEdge
-
-        var maxPointers = 1
-        var dx = 0f
-        var dy = 0f
-        var pressed = true
-
-        while (pressed) {
-            val event = awaitPointerEvent(PointerEventPass.Initial)
-            maxPointers = max(maxPointers, event.changes.count { it.pressed })
-            val change = event.changes.firstOrNull { it.pressed }
-            if (change != null) {
-                dx += change.positionChange().x
-                dy += change.positionChange().y
-            }
-            if (maxPointers >= 2 && twoFingerAllowed) {
-                event.changes.forEach { it.consume() }
-            }
-            pressed = event.changes.any { it.pressed }
-        }
-
-        if (maxPointers >= 2 && twoFingerAllowed) {
-            val delta = if (axis == SwipeAxis.HORIZONTAL) dx else dy
-            if (abs(delta) >= thresholdPx) {
-                var direction = if (delta < 0) 1 else -1
-                if (invert) direction = -direction
-                onSwitchRecent(direction)
-            }
-        } else if (maxPointers == 1 && dy < -thresholdPx && abs(dy) > abs(dx)) {
-            onOpenDrawer()
-        }
     }
 }

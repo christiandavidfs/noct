@@ -92,7 +92,7 @@ fun DrawerScreen(
             contentPadding = PaddingValues(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {
-            items(filtered, key = { it.packageName }) { app ->
+            items(filtered, key = { it.key }) { app ->
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

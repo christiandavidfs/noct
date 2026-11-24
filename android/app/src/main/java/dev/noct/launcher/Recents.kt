@@ -28,12 +28,13 @@ object RecentApps {
                 lastSeen[event.packageName] = event.timeStamp
             }
         }
-        val byPackage = apps.associateBy { it.packageName }
+        val currentUser = apps.filter { it.profileLabel == null }.associateBy { it.packageName }
+        val anyUser = apps.associateBy { it.packageName }
         return lastSeen.entries
             .asSequence()
             .filter { (pkg, _) -> pkg != context.packageName && pkg !in ignored }
             .sortedByDescending { it.value }
-            .mapNotNull { byPackage[it.key] }
+            .mapNotNull { currentUser[it.key] ?: anyUser[it.key] }
             .take(limit)
             .toList()
     }

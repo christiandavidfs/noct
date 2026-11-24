@@ -11,14 +11,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -39,6 +37,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onOpenSync: () -> Unit,
     onOpenWidgets: () -> Unit,
+    onOpenEditHome: () -> Unit,
     onRequestUsageAccess: () -> Unit,
 ) {
     Scaffold(
@@ -125,67 +124,24 @@ fun SettingsScreen(
                     onChange = { onChange(prefs.copy(clock24h = it)) },
                 )
             }
+            item {
+                OutlinedButton(
+                    onClick = onOpenEditHome,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Editar home (mover elementos)")
+                }
+            }
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
 
-            item { SectionTitle("Gesto de dos dedos") }
+            item { SectionTitle("Cambiar de app") }
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    FilterChip(
-                        selected = prefs.axis == SwipeAxis.HORIZONTAL,
-                        onClick = { onChange(prefs.copy(axis = SwipeAxis.HORIZONTAL)) },
-                        label = { Text("Horizontal") },
-                    )
-                    FilterChip(
-                        selected = prefs.axis == SwipeAxis.VERTICAL,
-                        onClick = { onChange(prefs.copy(axis = SwipeAxis.VERTICAL)) },
-                        label = { Text("Vertical") },
-                    )
-                }
                 Text(
-                    text = "Dos dedos cambian de app entre las que están en marcha.",
+                    text = "El home muestra un carrusel horizontal con las apps en marcha. Desliza con un dedo y toca para abrir.",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp),
                 )
-            }
-            item {
-                SliderSetting(
-                    title = "Sensibilidad",
-                    value = prefs.thresholdDp.toFloat(),
-                    valueText = "${prefs.thresholdDp} dp",
-                    range = 24f..160f,
-                    steps = 0,
-                    onChange = { onChange(prefs.copy(thresholdDp = it.toInt())) },
-                )
-            }
-            item {
-                SwitchSetting(
-                    title = "Invertir dirección",
-                    description = "Cambia el sentido del gesto",
-                    checked = prefs.invert,
-                    onChange = { onChange(prefs.copy(invert = it)) },
-                )
-            }
-            item {
-                SwitchSetting(
-                    title = "Solo desde el borde",
-                    description = "Evita falsos positivos al hacer scroll",
-                    checked = prefs.edgeOnly,
-                    onChange = { onChange(prefs.copy(edgeOnly = it)) },
-                )
-            }
-            if (prefs.edgeOnly) {
-                item {
-                    SliderSetting(
-                        title = "Ancho del borde",
-                        value = prefs.edgeWidthDp.toFloat(),
-                        valueText = "${prefs.edgeWidthDp} dp",
-                        range = 16f..60f,
-                        steps = 0,
-                        onChange = { onChange(prefs.copy(edgeWidthDp = it.toInt())) },
-                    )
-                }
             }
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
@@ -209,6 +165,12 @@ fun SettingsScreen(
                 ) {
                     Text(if (hasUsageAccess) "Revisar acceso de uso" else "Dar acceso de uso")
                 }
+                Text(
+                    text = "Los clones del sistema (p. ej. el WhatsApp duplicado de Motorola) pueden no aparecer: Android no los expone a launchers de terceros.",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(top = 8.dp),
+                )
             }
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
@@ -250,32 +212,6 @@ private fun SectionTitle(text: String) {
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
     )
-}
-
-@Composable
-private fun SliderSetting(
-    title: String,
-    value: Float,
-    valueText: String,
-    range: ClosedFloatingPointRange<Float>,
-    steps: Int,
-    onChange: (Float) -> Unit,
-) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(title, fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground)
-            Text(valueText, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Slider(
-            value = value,
-            onValueChange = onChange,
-            valueRange = range,
-            steps = steps,
-        )
-    }
 }
 
 @Composable

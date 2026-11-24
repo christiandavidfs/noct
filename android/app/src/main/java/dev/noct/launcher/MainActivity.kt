@@ -26,8 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -57,6 +59,19 @@ private fun NoctLauncherApp() {
     var hasUsageAccess by remember { mutableStateOf(UsageAccess.hasPermission(context)) }
     var loading by remember { mutableStateOf(true) }
     var screen by rememberSaveable { mutableStateOf("home") }
+    var editHome by rememberSaveable { mutableStateOf(false) }
+
+    fun moveSection(section: String, delta: Int) {
+        val order = prefs.homeOrder.toMutableList()
+        val index = order.indexOf(section)
+        if (index < 0) return
+        val target = (index + delta).coerceIn(0, order.lastIndex)
+        if (target == index) return
+        order.removeAt(index)
+        order.add(target, section)
+        prefs = prefs.copy(homeOrder = order)
+        store.save(prefs)
+    }
 
     val widgetHost = remember { AppWidgetHost(context, 1024) }
     DisposableEffect(widgetHost) {
@@ -82,15 +97,6 @@ private fun NoctLauncherApp() {
         }
     }
 
-    fun refreshRecents() {
-        hasUsageAccess = UsageAccess.hasPermission(context)
-        if (apps.isEmpty()) return
-        scope.launch {
-            val list = withContext(Dispatchers.IO) { RecentApps.load(context, apps) }
-            recents = list
-        }
-    }
-
     LaunchedEffect(Unit) {
         val cached = AppCache.apps
         if (cached != null) {
@@ -100,23 +106,36 @@ private fun NoctLauncherApp() {
             AppCache.apps = apps
         }
         loading = false
-        refreshRecents()
     }
 
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        hasUsageAccess = UsageAccess.hasPermission(context)
-        refreshRecents()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner, apps) {
+        if (apps.isEmpty()) return@LaunchedEffect
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                hasUsageAccess = UsageAccess.hasPermission(context)
+                // UsageStats tarda un poco en registrar el cambio de app.
+                delay(250)
+                val list = withContext(Dispatchers.IO) { RecentApps.load(context, apps) }
+                recents = list
+                delay(2500)
+            }
+        }
     }
 
     val palette = remember(prefs.themeJson) { parseNoctTheme(prefs.themeJson) }
     val scheme = palette?.toColorScheme() ?: NoctDefaultDark
 
-    BackHandler(enabled = screen != "home") {
-        screen = when (screen) {
-            "widgetPicker" -> "widgets"
-            "widgets" -> "settings"
-            "sync" -> "settings"
-            else -> "home"
+    BackHandler(enabled = screen != "home" || editHome) {
+        if (editHome) {
+            editHome = false
+        } else {
+            screen = when (screen) {
+                "widgetPicker" -> "widgets"
+                "widgets" -> "settings"
+                "sync" -> "settings"
+                else -> "home"
+            }
         }
     }
 
@@ -128,7 +147,7 @@ private fun NoctLauncherApp() {
                     onBack = { screen = "home" },
                     onLaunch = { app ->
                         screen = "home"
-                        AppRepository.launch(context, app.packageName)
+                        AppRepository.launch(context, app)
                     },
                 )
 
@@ -142,6 +161,10 @@ private fun NoctLauncherApp() {
                     onBack = { screen = "home" },
                     onOpenSync = { screen = "sync" },
                     onOpenWidgets = { screen = "widgets" },
+                    onOpenEditHome = {
+                        editHome = true
+                        screen = "home"
+                    },
                     onRequestUsageAccess = {
                         UsageAccess.openSettings(context)
                     },
@@ -183,6 +206,10 @@ private fun NoctLauncherApp() {
                         themeName = palette?.name,
                         widgetHost = widgetHost,
                         hostedWidgets = hostedWidgets,
+                        editMode = editHome,
+                        onEnterEdit = { editHome = true },
+                        onExitEdit = { editHome = false },
+                        onMoveSection = { section, delta -> moveSection(section, delta) },
                         onOpenDrawer = { screen = "drawer" },
                         onOpenSettings = { screen = "settings" },
                         onOpenSync = { screen = "sync" },

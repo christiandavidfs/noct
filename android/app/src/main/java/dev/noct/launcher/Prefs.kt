@@ -2,14 +2,10 @@ package dev.noct.launcher
 
 import android.content.Context
 
-enum class SwipeAxis { HORIZONTAL, VERTICAL }
+val DefaultHomeOrder = listOf("clock", "battery", "recents", "widgets", "sync")
 
 data class LauncherPrefs(
-    val axis: SwipeAxis = SwipeAxis.HORIZONTAL,
-    val invert: Boolean = false,
-    val thresholdDp: Int = 64,
-    val edgeOnly: Boolean = true,
-    val edgeWidthDp: Int = 28,
+    val homeOrder: List<String> = DefaultHomeOrder,
     val showClock: Boolean = true,
     val showBattery: Boolean = true,
     val showRecents: Boolean = true,
@@ -24,12 +20,11 @@ class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("noct_launcher", Context.MODE_PRIVATE)
 
     fun load(): LauncherPrefs = LauncherPrefs(
-        axis = runCatching { SwipeAxis.valueOf(sp.getString("axis", "HORIZONTAL")!!) }
-            .getOrDefault(SwipeAxis.HORIZONTAL),
-        invert = sp.getBoolean("invert", false),
-        thresholdDp = sp.getInt("thresholdDp", 64),
-        edgeOnly = sp.getBoolean("edgeOnly", true),
-        edgeWidthDp = sp.getInt("edgeWidthDp", 28),
+        homeOrder = sp.getString("homeOrder", null)
+            ?.split("|")
+            ?.filter { it.isNotBlank() }
+            ?.takeIf { it.isNotEmpty() }
+            ?: DefaultHomeOrder,
         showClock = sp.getBoolean("showClock", true),
         showBattery = sp.getBoolean("showBattery", true),
         showRecents = sp.getBoolean("showRecents", true),
@@ -42,11 +37,7 @@ class Prefs(context: Context) {
 
     fun save(prefs: LauncherPrefs) {
         sp.edit()
-            .putString("axis", prefs.axis.name)
-            .putBoolean("invert", prefs.invert)
-            .putInt("thresholdDp", prefs.thresholdDp)
-            .putBoolean("edgeOnly", prefs.edgeOnly)
-            .putInt("edgeWidthDp", prefs.edgeWidthDp)
+            .putString("homeOrder", prefs.homeOrder.joinToString("|"))
             .putBoolean("showClock", prefs.showClock)
             .putBoolean("showBattery", prefs.showBattery)
             .putBoolean("showRecents", prefs.showRecents)
