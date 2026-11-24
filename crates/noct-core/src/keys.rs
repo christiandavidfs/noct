@@ -6,6 +6,7 @@ use anyhow::{bail, Context, Result};
 use serde::Serialize;
 
 use crate::env;
+use crate::kdl;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Keybind {
@@ -678,5 +679,422 @@ mod tests {
             Some("noctalia msg session lock")
         );
         assert!(migrate_command("qs -c noctalia-shell ipc call unknown thing").is_none());
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Traducción de atajos Niri → Umbriel
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TranslatedBind {
+    pub chord: String,
+    pub action: String,
+    pub source_action: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repeat: Option<bool>,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct UntranslatedBind {
+    pub chord: String,
+    pub action: String,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TranslationReport {
+    pub from: String,
+    pub to: String,
+    pub translated: Vec<TranslatedBind>,
+    pub skipped: Vec<UntranslatedBind>,
+}
+
+fn niri_chord_to_umbriel(chord: &str) -> String {
+    let mut mods: Vec<&str> = Vec::new();
+    let mut key = String::new();
+    for part in chord.split('+') {
+        let part = part.trim();
+        if part.is_empty() {
+            continue;
+        }
+        match part.to_ascii_lowercase().as_str() {
+            "mod" | "super" | "logo" | "win" => mods.push("Mod"),
+            "ctrl" | "control" => mods.push("Ctrl"),
+            "alt" | "option" => mods.push("Alt"),
+            "shift" => mods.push("Shift"),
+            _ => key = niri_key_name(part),
+        }
+    }
+    // Orden estable: Mod, Ctrl, Alt, Shift.
+    let order = ["Mod", "Ctrl", "Alt", "Shift"];
+    let mut out: Vec<String> = order
+        .iter()
+        .filter(|m| mods.contains(m))
+        .map(|m| m.to_string())
+        .collect();
+    if !key.is_empty() {
+        out.push(key);
+    }
+    out.join("+")
+}
+
+fn niri_key_name(key: &str) -> String {
+    let lower = key.to_ascii_lowercase();
+    match lower.as_str() {
+        "escape" => "Escape".into(),
+        "return" => "Return".into(),
+        "tab" => "Tab".into(),
+        "space" => "Space".into(),
+        "comma" => "Comma".into(),
+        "period" => "Period".into(),
+        "minus" => "Minus".into(),
+        "equal" => "Equal".into(),
+        "delete" => "Delete".into(),
+        "backspace" => "Backspace".into(),
+        "home" => "Home".into(),
+        "end" => "End".into(),
+        "up" => "Up".into(),
+        "down" => "Down".into(),
+        "left" => "Left".into(),
+        "right" => "Right".into(),
+        "wheelscrolldown" => "WheelDown".into(),
+        "wheelscrollup" => "WheelUp".into(),
+        "wheelscrollleft" => "WheelLeft".into(),
+        "wheelscrollright" => "WheelRight".into(),
+        "bracketleft" => "BracketLeft".into(),
+        "bracketright" => "BracketRight".into(),
+        _ => {
+            if lower.starts_with("xf86") {
+                // XF86AudioRaiseVolume conserva su forma original.
+                key.to_string()
+            } else if key.len() == 1 {
+                key.to_ascii_uppercase()
+            } else {
+                let mut chars = key.chars();
+                match chars.next() {
+                    Some(first) => format!("{}{}", first.to_ascii_uppercase(), chars.as_str()),
+                    None => String::new(),
+                }
+            }
+        }
+    }
+}
+
+fn percent_delta(value: &str) -> Option<String> {
+    let value = value.trim();
+    let sign = if value.starts_with('-') { -1.0 } else { 1.0 };
+    let number = value.trim_start_matches(['-', '+']).trim_end_matches('%');
+    let parsed: f64 = number.parse().ok()?;
+    Some(format!("{}", sign * parsed / 100.0))
+}
+
+fn translate_niri_action(action: &str, args: &[String]) -> Option<String> {
+    let action = action.trim();
+    if action == "spawn" || action == "spawn-sh" {
+        if args.is_empty() {
+            return None;
+        }
+        // No traducir comandos con shell complejo: Umbriel no documenta cómo
+        // interpreta `spawn:` y podríamos escribir un atajo roto.
+        let simple = args.iter().all(|arg| {
+            arg.chars()
+                .all(|c| c.is_ascii_alphanumeric() || " -_.:/@%+=,".contains(c))
+        });
+        if !simple {
+            return None;
+        }
+        let command = if action == "spawn-sh" {
+            args.join(" ")
+        } else {
+            args.iter()
+                .map(|arg| {
+                    let safe = !arg.is_empty()
+                        && arg
+                            .chars()
+                            .all(|c| c.is_ascii_alphanumeric() || "-_./:@%+=,".contains(c));
+                    if safe {
+                        arg.clone()
+                    } else {
+                        format!("'{}'", arg.replace('\'', "'\\''"))
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" ")
+        };
+        return Some(format!("spawn:{command}"));
+    }
+
+    let first = args.first().map(String::as_str).unwrap_or_default();
+    let mapped = match action {
+        "close-window" => "window-close".to_string(),
+        "focus-column-left" => "window-focus-left".to_string(),
+        "focus-column-right" => "window-focus-right".to_string(),
+        "focus-window-up" => "window-focus-up".to_string(),
+        "focus-window-down" => "window-focus-down".to_string(),
+        "focus-column-first" => "column-focus-first".to_string(),
+        "focus-column-last" => "column-focus-last".to_string(),
+        "move-column-left" => "column-move-left".to_string(),
+        "move-column-right" => "column-move-right".to_string(),
+        "move-window-up" => "window-move-up".to_string(),
+        "move-window-down" => "window-move-down".to_string(),
+        "move-column-to-first" => "column-move-to-first".to_string(),
+        "move-column-to-last" => "column-move-to-last".to_string(),
+        "focus-monitor-left" => "output-focus-left".to_string(),
+        "focus-monitor-right" => "output-focus-right".to_string(),
+        "focus-monitor-up" => "output-focus-up".to_string(),
+        "focus-monitor-down" => "output-focus-down".to_string(),
+        "move-column-to-monitor-left" => "column-move-to-output-left".to_string(),
+        "move-column-to-monitor-right" => "column-move-to-output-right".to_string(),
+        "move-column-to-monitor-up" => "column-move-to-output-up".to_string(),
+        "move-column-to-monitor-down" => "column-move-to-output-down".to_string(),
+        "switch-focus-between-floating-and-tiling" => "window-focus-switch-floating".to_string(),
+        "consume-or-expel-window-left" => "window-consume-or-expel-left".to_string(),
+        "consume-or-expel-window-right" => "window-consume-or-expel-right".to_string(),
+        "consume-window-into-column" => "window-consume-right".to_string(),
+        "switch-preset-column-width" => "window-cycle-primary-extent".to_string(),
+        "switch-preset-column-width-back" => "window-cycle-primary-extent-back".to_string(),
+        "switch-preset-window-height" => "window-cycle-secondary-extent".to_string(),
+        "switch-preset-window-height-back" => "window-cycle-secondary-extent-back".to_string(),
+        "expand-column-to-available-width" => "window-set-primary-extent:1.0".to_string(),
+        "center-column" => "column-center".to_string(),
+        "set-column-width" => format!(
+            "window-modify-primary-extent:{}",
+            percent_delta(first).unwrap_or_default()
+        ),
+        "set-window-height" => format!(
+            "window-modify-secondary-extent:{}",
+            percent_delta(first).unwrap_or_default()
+        ),
+        "toggle-window-floating" => "window-toggle-floating".to_string(),
+        "maximize-column" => "window-set-primary-extent:1.0".to_string(),
+        "fullscreen-window" => "window-toggle-fullscreen".to_string(),
+        "toggle-column-tabbed-display" => "column-toggle-tabbed".to_string(),
+        "maximize-window-to-edges" => "window-toggle-maximize-to-edges".to_string(),
+        "focus-workspace-down" => "workspace-next".to_string(),
+        "focus-workspace-up" => "workspace-previous".to_string(),
+        "focus-workspace-previous" => "workspace-focus-last".to_string(),
+        "move-column-to-workspace-down" => "column-move-to-workspace-next".to_string(),
+        "move-column-to-workspace-up" => "column-move-to-workspace-previous".to_string(),
+        "focus-workspace" => {
+            if first.is_empty() {
+                return None;
+            }
+            format!("workspace-switch:{first}")
+        }
+        "move-column-to-workspace" => {
+            if first.is_empty() {
+                return None;
+            }
+            format!("column-move-to-workspace:{first}")
+        }
+        "toggle-overview" => "overview-toggle".to_string(),
+        "show-hotkey-overlay" => "cheatsheet-open".to_string(),
+        "toggle-keyboard-shortcuts-inhibit" => "shortcuts-inhibit-toggle".to_string(),
+        "quit" => "session-quit".to_string(),
+        "power-off-monitors" => "dpms-off".to_string(),
+        _ => return None,
+    };
+
+    if mapped.ends_with(':') {
+        return None;
+    }
+    Some(mapped)
+}
+
+fn niri_value_string(value: &kdl::Value) -> Option<String> {
+    match value {
+        kdl::Value::Str(s) | kdl::Value::Ident(s) => Some(s.clone()),
+        kdl::Value::Number(n) => Some(if n.fract() == 0.0 {
+            format!("{}", *n as i64)
+        } else {
+            format!("{n}")
+        }),
+        kdl::Value::Bool(b) => Some(b.to_string()),
+    }
+}
+
+fn load_niri_bind_nodes() -> Vec<kdl::Node> {
+    let dir = niri_config_dir();
+    let mut files = Vec::new();
+    collect_files(&dir, &["kdl"], 3, &mut files);
+    let mut binds = Vec::new();
+    for file in files {
+        if file.file_name().and_then(|n| n.to_str()) == Some("noct-bridge.kdl") {
+            continue;
+        }
+        let Ok(text) = std::fs::read_to_string(&file) else {
+            continue;
+        };
+        for node in kdl::parse(&text) {
+            if node.name != "binds" {
+                continue;
+            }
+            binds.extend(node.children);
+        }
+    }
+    binds
+}
+
+/// Propone la traducción de los atajos de Niri al formato de Umbriel.
+pub fn translate_niri_to_umbriel() -> Result<TranslationReport> {
+    let catalog = umbriel_actions();
+    let existing = load_umbriel_default()?;
+    let existing_chords: Vec<String> = existing
+        .iter()
+        .map(|bind| normalize_chord(&bind.chord))
+        .collect();
+
+    let mut translated = Vec::new();
+    let mut skipped = Vec::new();
+    let mut seen: Vec<String> = Vec::new();
+
+    for node in load_niri_bind_nodes() {
+        let chord = niri_chord_to_umbriel(&node.name);
+        let Some(action_node) = node.children.first() else {
+            continue;
+        };
+        let args: Vec<String> = action_node
+            .args
+            .iter()
+            .filter_map(niri_value_string)
+            .collect();
+        let source_action = if args.is_empty() {
+            action_node.name.clone()
+        } else {
+            format!("{} {}", action_node.name, args.join(" "))
+        };
+
+        let Some(action) = translate_niri_action(&action_node.name, &args) else {
+            let reason = if matches!(action_node.name.as_str(), "spawn" | "spawn-sh") {
+                "comando con shell; tradúcelo a mano".into()
+            } else {
+                "sin equivalente en Umbriel".into()
+            };
+            skipped.push(UntranslatedBind {
+                chord,
+                action: source_action,
+                reason,
+            });
+            continue;
+        };
+        if !is_valid_action(&action, &catalog) {
+            skipped.push(UntranslatedBind {
+                chord,
+                action: source_action,
+                reason: format!("Umbriel no reconoce la acción '{action}'"),
+            });
+            continue;
+        }
+
+        let normalized = normalize_chord(&chord);
+        if existing_chords.contains(&normalized) {
+            skipped.push(UntranslatedBind {
+                chord,
+                action: source_action,
+                reason: "el chord ya existe en Umbriel".into(),
+            });
+            continue;
+        }
+        if seen.contains(&normalized) {
+            skipped.push(UntranslatedBind {
+                chord,
+                action: source_action,
+                reason: "chord duplicado en Niri".into(),
+            });
+            continue;
+        }
+        seen.push(normalized);
+
+        let repeat = action_node
+            .prop("repeat")
+            .and_then(|v| v.as_bool())
+            .or_else(|| node.prop("repeat").and_then(|v| v.as_bool()));
+        let note = if node.props.iter().any(|(k, _)| k == "hotkey-overlay-title") {
+            "etiqueta del overlay descartada".to_string()
+        } else {
+            String::new()
+        };
+
+        translated.push(TranslatedBind {
+            chord,
+            action,
+            source_action,
+            repeat,
+            note,
+        });
+    }
+
+    Ok(TranslationReport {
+        from: "niri".into(),
+        to: "umbriel".into(),
+        translated,
+        skipped,
+    })
+}
+
+/// Escribe una lista de atajos en el archivo gestionado (mezclando con los existentes).
+pub fn merge_managed(binds: &[ManagedBind]) -> Result<usize> {
+    let mut existing = load_managed()?;
+    let mut written = 0usize;
+    for bind in binds {
+        if let Some(found) = existing.iter_mut().find(|b| b.chord == bind.chord) {
+            found.action = bind.action.clone();
+            found.repeat = bind.repeat;
+        } else {
+            existing.push(bind.clone());
+        }
+        written += 1;
+    }
+    existing.sort_by(|a, b| a.chord.cmp(&b.chord));
+    write_managed(&existing)?;
+    Ok(written)
+}
+
+#[cfg(test)]
+mod translate_tests {
+    use super::*;
+
+    #[test]
+    fn translates_chords() {
+        assert_eq!(niri_chord_to_umbriel("Mod+CTRL+UP"), "Mod+Ctrl+Up");
+        assert_eq!(
+            niri_chord_to_umbriel("Mod+Shift+ESCAPE"),
+            "Mod+Shift+Escape"
+        );
+        assert_eq!(
+            niri_chord_to_umbriel("Mod+WheelScrollDown"),
+            "Mod+WheelDown"
+        );
+        assert_eq!(
+            niri_chord_to_umbriel("XF86AudioRaiseVolume"),
+            "XF86AudioRaiseVolume"
+        );
+    }
+
+    #[test]
+    fn translates_actions() {
+        assert_eq!(
+            translate_niri_action("close-window", &[]).as_deref(),
+            Some("window-close")
+        );
+        assert_eq!(
+            translate_niri_action("focus-workspace", &["3".into()]).as_deref(),
+            Some("workspace-switch:3")
+        );
+        assert_eq!(
+            translate_niri_action("set-column-width", &["-10%".into()]).as_deref(),
+            Some("window-modify-primary-extent:-0.1")
+        );
+        assert_eq!(
+            translate_niri_action("spawn", &["alacritty".into()]).as_deref(),
+            Some("spawn:alacritty")
+        );
+        assert!(translate_niri_action(
+            "spawn",
+            &["sh".into(), "-c".into(), "grim -g \"$(slurp)\" -".into()]
+        )
+        .is_none());
     }
 }

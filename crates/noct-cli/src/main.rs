@@ -179,6 +179,14 @@ enum KeysCmd {
         #[arg(long)]
         json: bool,
     },
+    /// Traduce los atajos de Niri al formato de Umbriel
+    Translate {
+        /// Escribe los atajos traducidos en el archivo gestionado
+        #[arg(long)]
+        apply: bool,
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 fn main() -> ExitCode {
@@ -661,6 +669,7 @@ fn cmd_keys(cmd: KeysCmd) -> Result<ExitCode> {
 
             keys::set_managed(&chord, &action, repeat)?;
 
+            let _ = config::fix_all();
             let validate = env::run("umbriel", &["config", "validate"]);
             let valid = validate.as_ref().map(|o| o.success).unwrap_or(false);
             if !valid {
@@ -732,6 +741,97 @@ fn cmd_keys(cmd: KeysCmd) -> Result<ExitCode> {
                     println!("{action}");
                 }
                 println!("\n{} acciones.", actions.len());
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        KeysCmd::Translate { apply, json } => {
+            let report = keys::translate_niri_to_umbriel()?;
+
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                println!(
+                    "Traducción Niri → Umbriel: {} atajo(s), {} sin traducir",
+                    report.translated.len(),
+                    report.skipped.len()
+                );
+                for bind in &report.translated {
+                    let repeat = match bind.repeat {
+                        Some(false) => "  [sin repeat]",
+                        _ => "",
+                    };
+                    println!("  {:<28} → {}{repeat}", bind.chord, bind.action);
+                }
+                if !report.skipped.is_empty() {
+                    println!("\nSin traducir:");
+                    for bind in &report.skipped {
+                        println!("  {:<28} {} ({})", bind.chord, bind.action, bind.reason);
+                    }
+                }
+            }
+
+            if !apply {
+                if !json {
+                    println!(
+                        "\nNada escrito. Revisa la lista y ejecuta `noct keys translate --apply`."
+                    );
+                }
+                return Ok(ExitCode::SUCCESS);
+            }
+            if report.translated.is_empty() {
+                println!("No hay atajos que aplicar.");
+                return Ok(ExitCode::SUCCESS);
+            }
+
+            let managed = keys::managed_path();
+            let previous = std::fs::read_to_string(&managed).ok();
+            let include = keys::ensure_include()?;
+            if include.added {
+                println!(
+                    "Include añadido a {} (backup: {})",
+                    include.file,
+                    include.backup.as_deref().unwrap_or("—")
+                );
+            }
+
+            let binds: Vec<keys::ManagedBind> = report
+                .translated
+                .iter()
+                .map(|bind| keys::ManagedBind {
+                    chord: bind.chord.clone(),
+                    action: bind.action.clone(),
+                    repeat: bind.repeat,
+                })
+                .collect();
+            let written = keys::merge_managed(&binds)?;
+
+            let _ = config::fix_all();
+            let validate = env::run("umbriel", &["config", "validate"]);
+            let valid = validate.as_ref().map(|o| o.success).unwrap_or(false);
+            if !valid {
+                match previous {
+                    Some(text) => {
+                        let _ = std::fs::write(&managed, text);
+                    }
+                    None => {
+                        let _ = std::fs::remove_file(&managed);
+                    }
+                }
+                let detail = validate
+                    .map(|o| o.stderr)
+                    .unwrap_or_else(|| "`umbriel` no está disponible".to_string());
+                bail!("la configuración no valida; traducción revertida: {detail}");
+            }
+
+            println!("✓ {written} atajo(s) escritos en {}", managed.display());
+            if env::umbriel_alive() {
+                match env::run("umbriel", &["msg", "config-reload"]) {
+                    Some(out) if out.success => println!("✓ Umbriel recargado en vivo"),
+                    Some(out) => println!("! No se pudo recargar: {}", out.stderr),
+                    None => println!("! No se pudo contactar con Umbriel"),
+                }
+            } else {
+                println!("· Umbriel no está corriendo; se aplicará al arrancar");
             }
             Ok(ExitCode::SUCCESS)
         }

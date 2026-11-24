@@ -1520,6 +1520,9 @@ fn validate_niri() -> Result<()> {
 }
 
 fn validate_umbriel() -> Result<()> {
+    // Autocorrige claves del tema que Noctalia vuelve a escribir con el nombre
+    // antiguo; si no, la validación fallaría por un problema ajeno al puente.
+    let _ = crate::config::fix_all();
     let Some(out) = env::run("umbriel", &["config", "validate"]) else {
         return Ok(());
     };
