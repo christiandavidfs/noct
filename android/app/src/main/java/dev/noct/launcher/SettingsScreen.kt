@@ -102,8 +102,8 @@ fun SettingsScreen(
             }
             item {
                 SwitchSetting(
-                    title = "Apps en marcha",
-                    description = "Lista de apps recientes",
+                    title = "Apps recientes",
+                    description = "Carrusel de apps usadas hace poco",
                     checked = prefs.showRecents,
                     onChange = { onChange(prefs.copy(showRecents = it)) },
                 )
@@ -138,7 +138,7 @@ fun SettingsScreen(
             item { SectionTitle("Cambiar de app") }
             item {
                 Text(
-                    text = "El home muestra un carrusel horizontal con las apps en marcha. Desliza con un dedo y toca para abrir.",
+                    text = "El home muestra un carrusel horizontal con las apps usadas recientemente. Desliza con un dedo, toca para abrir y usa la X para quitarla.",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -146,13 +146,13 @@ fun SettingsScreen(
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
 
-            item { SectionTitle("Apps en marcha") }
+            item { SectionTitle("Apps recientes") }
             item {
                 Text(
                     text = if (hasUsageAccess) {
-                        "Acceso de uso concedido. Noct puede ver las apps recientes."
+                        "Acceso de uso concedido. Noct puede ver las apps usadas recientemente."
                     } else {
-                        "Sin acceso de uso. Android no deja ver qué apps están en marcha."
+                        "Sin acceso de uso. Android no deja ver qué apps usaste recientemente."
                     },
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

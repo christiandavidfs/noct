@@ -14,6 +14,7 @@ data class LauncherPrefs(
     val serverUrl: String = "",
     val token: String = "",
     val themeJson: String? = null,
+    val dismissed: Map<String, Long> = emptyMap(),
 )
 
 class Prefs(context: Context) {
@@ -33,6 +34,15 @@ class Prefs(context: Context) {
         serverUrl = sp.getString("serverUrl", "") ?: "",
         token = sp.getString("token", "") ?: "",
         themeJson = sp.getString("themeJson", null),
+        dismissed = sp.getStringSet("dismissed", emptySet())
+            ?.mapNotNull { entry ->
+                val separator = entry.lastIndexOf(':')
+                if (separator <= 0) null
+                else entry.substring(0, separator) to
+                    (entry.substring(separator + 1).toLongOrNull() ?: 0L)
+            }
+            ?.toMap()
+            ?: emptyMap(),
     )
 
     fun save(prefs: LauncherPrefs) {
@@ -46,6 +56,10 @@ class Prefs(context: Context) {
             .putString("serverUrl", prefs.serverUrl)
             .putString("token", prefs.token)
             .putString("themeJson", prefs.themeJson)
+            .putStringSet(
+                "dismissed",
+                prefs.dismissed.map { (pkg, at) -> "$pkg:$at" }.toSet(),
+            )
             .apply()
     }
 }

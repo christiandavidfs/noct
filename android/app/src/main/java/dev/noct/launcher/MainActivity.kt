@@ -109,18 +109,37 @@ private fun NoctLauncherApp() {
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(lifecycleOwner, apps) {
+    LaunchedEffect(lifecycleOwner, apps, prefs.dismissed) {
         if (apps.isEmpty()) return@LaunchedEffect
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (true) {
                 hasUsageAccess = UsageAccess.hasPermission(context)
                 // UsageStats tarda un poco en registrar el cambio de app.
                 delay(250)
-                val list = withContext(Dispatchers.IO) { RecentApps.load(context, apps) }
-                recents = list
+                val loaded = withContext(Dispatchers.IO) { RecentApps.load(context, apps) }
+                val dismissed = prefs.dismissed
+                val visible = loaded.filter { recent ->
+                    val dismissedAt = dismissed[recent.app.packageName]
+                    dismissedAt == null || recent.lastUsed > dismissedAt
+                }
+                val active = dismissed.filter { (pkg, at) ->
+                    loaded.any { it.app.packageName == pkg && it.lastUsed > at }
+                }
+                if (active != dismissed) {
+                    prefs = prefs.copy(dismissed = active)
+                    store.save(prefs)
+                }
+                recents = visible.map { it.app }
                 delay(2500)
             }
         }
+    }
+
+    fun dismissRecent(app: AppEntry) {
+        prefs = prefs.copy(
+            dismissed = prefs.dismissed + (app.packageName to System.currentTimeMillis()),
+        )
+        store.save(prefs)
     }
 
     val palette = remember(prefs.themeJson) { parseNoctTheme(prefs.themeJson) }
@@ -210,6 +229,7 @@ private fun NoctLauncherApp() {
                         onEnterEdit = { editHome = true },
                         onExitEdit = { editHome = false },
                         onMoveSection = { section, delta -> moveSection(section, delta) },
+                        onDismissRecent = { dismissRecent(it) },
                         onOpenDrawer = { screen = "drawer" },
                         onOpenSettings = { screen = "settings" },
                         onOpenSync = { screen = "sync" },

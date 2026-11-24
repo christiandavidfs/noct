@@ -4,6 +4,11 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 
+data class RecentApp(
+    val app: AppEntry,
+    val lastUsed: Long,
+)
+
 object RecentApps {
     private val ignored = setOf(
         "com.android.systemui",
@@ -12,11 +17,11 @@ object RecentApps {
         "com.google.android.apps.nexuslauncher",
     )
 
-    fun load(context: Context, apps: List<AppEntry>, limit: Int = 5): List<AppEntry> {
+    fun load(context: Context, apps: List<AppEntry>, limit: Int = 5): List<RecentApp> {
         if (!UsageAccess.hasPermission(context) || apps.isEmpty()) return emptyList()
         val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val end = System.currentTimeMillis()
-        val start = end - 12 * 60 * 60 * 1000L
+        val start = end - 3 * 60 * 60 * 1000L
         val events = manager.queryEvents(start, end)
         val lastSeen = HashMap<String, Long>()
         val event = UsageEvents.Event()
@@ -34,7 +39,10 @@ object RecentApps {
             .asSequence()
             .filter { (pkg, _) -> pkg != context.packageName && pkg !in ignored }
             .sortedByDescending { it.value }
-            .mapNotNull { currentUser[it.key] ?: anyUser[it.key] }
+            .mapNotNull { (pkg, timestamp) ->
+                val app = currentUser[pkg] ?: anyUser[pkg]
+                app?.let { RecentApp(it, timestamp) }
+            }
             .take(limit)
             .toList()
     }

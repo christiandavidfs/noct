@@ -78,6 +78,7 @@ fun HomeScreen(
     onEnterEdit: () -> Unit,
     onExitEdit: () -> Unit,
     onMoveSection: (String, Int) -> Unit,
+    onDismissRecent: (AppEntry) -> Unit,
     onOpenDrawer: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenSync: () -> Unit,
@@ -90,6 +91,7 @@ fun HomeScreen(
 
     fun closeRecent(app: AppEntry) {
         dismissed = dismissed + app.packageName
+        onDismissRecent(app)
         runCatching {
             val manager = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as ActivityManager
             manager.killBackgroundProcesses(app.packageName)
@@ -444,7 +446,7 @@ private fun RecentsCarousel(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "EN MARCHA",
+                text = "RECIENTES",
                 fontSize = 10.sp,
                 letterSpacing = 1.5.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
