@@ -1,0 +1,15 @@
+[package]
+name = "noct-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "noct"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+noct-core = { path = "../noct-core" }
+serde_json = "1.0"
