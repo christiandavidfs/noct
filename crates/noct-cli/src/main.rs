@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
-use noct_core::{config, doctor, env, keys, profile, theme};
+use noct_core::{config, doctor, effects, env, keys, profile, theme};
 
 #[derive(Parser)]
 #[command(
@@ -42,6 +42,35 @@ enum Commands {
     Bridge {
         #[command(subcommand)]
         cmd: BridgeCmd,
+    },
+    /// Presets visuales de Umbriel
+    Effects {
+        #[command(subcommand)]
+        cmd: EffectsCmd,
+    },
+}
+
+#[derive(Subcommand)]
+enum EffectsCmd {
+    /// Lista los presets y los efectos instalados
+    List {
+        #[arg(long)]
+        json: bool,
+    },
+    /// Aplica un preset visual
+    Apply {
+        /// Identificador del preset (neon, cinema, matrix, minimal, off)
+        preset: String,
+        /// Muestra el fragmento sin escribir nada
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Muestra los efectos activos
+    Current {
+        #[arg(long)]
+        json: bool,
     },
 }
 
@@ -206,6 +235,7 @@ fn run() -> Result<ExitCode> {
         Commands::Theme { cmd } => cmd_theme(cmd),
         Commands::Keys { cmd } => cmd_keys(cmd),
         Commands::Bridge { cmd } => cmd_bridge(cmd),
+        Commands::Effects { cmd } => cmd_effects(cmd),
     }
 }
 
@@ -984,5 +1014,97 @@ fn resolve_source(from: Option<String>) -> Result<String> {
         _ => bail!(
             "no se pudo detectar el compositor activo; indica el origen con --from niri|umbriel"
         ),
+    }
+}
+
+fn cmd_effects(cmd: EffectsCmd) -> Result<ExitCode> {
+    match cmd {
+        EffectsCmd::List { json } => {
+            let presets = effects::presets();
+            let installed = effects::installed_effects();
+            let current = effects::current()?;
+
+            if json {
+                let payload = serde_json::json!({
+                    "presets": presets,
+                    "installed": installed,
+                    "current": current,
+                });
+                println!("{}", serde_json::to_string_pretty(&payload)?);
+                return Ok(ExitCode::SUCCESS);
+            }
+
+            println!("Presets de Noct");
+            for preset in &presets {
+                let active = current.preset.as_deref() == Some(preset.id.as_str());
+                let marker = if active { "●" } else { "○" };
+                println!("  {marker} {:<8} {}", preset.id, preset.name);
+                println!("           {}", preset.description);
+                if !preset.effects.is_empty() || !preset.animations.is_empty() {
+                    let mut parts = preset.effects.clone();
+                    parts.extend(preset.animations.iter().cloned());
+                    println!("           {}", parts.join(", "));
+                }
+                if !preset.missing.is_empty() {
+                    println!("           faltan: {}", preset.missing.join(", "));
+                }
+            }
+            println!("\nEfectos instalados en Umbriel ({}):", installed.len());
+            for effect in &installed {
+                println!("  {effect}");
+            }
+            if let Some(preset) = &current.preset {
+                println!("\nActivo: {preset}");
+            } else {
+                println!("\nActivo: ninguno");
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        EffectsCmd::Apply {
+            preset,
+            dry_run,
+            json,
+        } => {
+            let (report, content) = effects::apply(&preset, dry_run)?;
+            if dry_run {
+                println!("{content}");
+            }
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else if !dry_run {
+                println!("Preset: {} ({})", report.name, report.preset);
+                if !report.effects.is_empty() {
+                    println!("  efectos: {}", report.effects.join(", "));
+                }
+                if !report.animations.is_empty() {
+                    println!("  animaciones: {}", report.animations.join(", "));
+                }
+                println!("  archivo: {}", report.file);
+                if report.validated {
+                    println!("  validación: ok");
+                }
+                println!("  {}", report.message);
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        EffectsCmd::Current { json } => {
+            let current = effects::current()?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&current)?);
+            } else if current.effects.is_empty() && current.animations.is_empty() {
+                println!("Sin efectos de Noct activos.");
+            } else {
+                if let Some(preset) = &current.preset {
+                    println!("Preset: {preset}");
+                }
+                if !current.effects.is_empty() {
+                    println!("  efectos: {}", current.effects.join(", "));
+                }
+                if !current.animations.is_empty() {
+                    println!("  animaciones: {}", current.animations.join(", "));
+                }
+            }
+            Ok(ExitCode::SUCCESS)
+        }
     }
 }

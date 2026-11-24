@@ -2,6 +2,7 @@
 
 pub mod config;
 pub mod doctor;
+pub mod effects;
 pub mod env;
 pub mod kdl;
 pub mod keys;
