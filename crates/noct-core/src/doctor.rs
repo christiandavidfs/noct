@@ -156,6 +156,49 @@ fn greeter_command() -> Option<String> {
     None
 }
 
+/// Archivos que Noctalia reescribe al aplicar plantillas de tema.
+pub fn template_outputs() -> Vec<PathBuf> {
+    vec![
+        env::app_config("umbriel").join("noctalia.toml"),
+        env::app_config("gtk-3.0").join("gtk.css"),
+        env::app_config("kitty").join("noctalia.conf"),
+        env::app_config("ghostty").join("themes").join("noctalia"),
+    ]
+}
+
+/// Devuelve los archivos generados que no se pueden reescribir.
+pub fn readonly_template_outputs() -> Vec<PathBuf> {
+    template_outputs()
+        .into_iter()
+        .filter(|path| {
+            path.exists()
+                && path
+                    .metadata()
+                    .map(|m| m.permissions().readonly())
+                    .unwrap_or(false)
+        })
+        .collect()
+}
+
+/// Añade permiso de escritura a las plantillas generadas. Devuelve las rutas corregidas.
+#[cfg(unix)]
+pub fn fix_template_permissions() -> Vec<String> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut fixed = Vec::new();
+    for path in readonly_template_outputs() {
+        let Ok(metadata) = path.metadata() else {
+            continue;
+        };
+        let mut permissions = metadata.permissions();
+        permissions.set_mode(permissions.mode() | 0o200);
+        if std::fs::set_permissions(&path, permissions).is_ok() {
+            fixed.push(path.display().to_string());
+        }
+    }
+    fixed
+}
+
 /// Ejecuta todas las comprobaciones del sistema.
 pub fn run() -> Report {
     let mut checks = Vec::new();
@@ -372,6 +415,42 @@ pub fn run() -> Report {
                 None,
             )),
         }
+
+        if let Some(issue) = crate::config::duplicate_includes() {
+            checks.push(check(
+                "umbriel.includes",
+                "Includes duplicados",
+                Severity::Warn,
+                issue,
+                Some("Ejecuta `noct doctor --fix` para deduplicar"),
+            ));
+        } else {
+            checks.push(check(
+                "umbriel.includes",
+                "Includes sin duplicados",
+                Severity::Ok,
+                "Las rutas de include son únicas.",
+                None,
+            ));
+        }
+
+        if let Some(issue) = crate::config::umbriel_theme_issue() {
+            checks.push(check(
+                "umbriel.theme-compat",
+                "Tema de Umbriel incompatible",
+                Severity::Warn,
+                issue,
+                Some("Ejecuta `noct doctor --fix` para renombrar las claves"),
+            ));
+        } else {
+            checks.push(check(
+                "umbriel.theme-compat",
+                "Tema de Umbriel compatible",
+                Severity::Ok,
+                "Las claves del tema generado existen en el esquema instalado.",
+                None,
+            ));
+        }
     } else {
         checks.push(check(
             "umbriel.config",
@@ -382,7 +461,33 @@ pub fn run() -> Report {
         ));
     }
 
-    // 7. Compositor activo.
+    // 7. Plantillas generadas: deben poder reescribirse.
+    let readonly: Vec<String> = readonly_template_outputs()
+        .iter()
+        .map(|path| path.display().to_string())
+        .collect();
+    if readonly.is_empty() {
+        checks.push(check(
+            "templates.writable",
+            "Plantillas generadas escribibles",
+            Severity::Ok,
+            "Noctalia puede actualizar los archivos de tema de las apps.",
+            None,
+        ));
+    } else {
+        checks.push(check(
+            "templates.writable",
+            "Plantillas generadas de solo lectura",
+            Severity::Warn,
+            format!(
+                "Estos archivos no se pueden reescribir: {}. El tema dejará de actualizarse.",
+                readonly.join(", ")
+            ),
+            Some("Ejecuta `chmod u+w` sobre esos archivos"),
+        ));
+    }
+
+    // 8. Compositor activo.
     match compositor {
         Compositor::Umbriel => checks.push(check(
             "compositor.running",
@@ -414,7 +519,7 @@ pub fn run() -> Report {
         )),
     }
 
-    // 8. Greeter.
+    // 9. Greeter.
     match &greeter_command {
         Some(cmd) if cmd.contains("noctalia-greeter-session") => checks.push(check(
             "greeter.session",
@@ -439,7 +544,7 @@ pub fn run() -> Report {
         )),
     }
 
-    // 9. Config propia de Noct.
+    // 10. Config propia de Noct.
     let noct_dir = env::app_config("noct");
     checks.push(check(
         "noct.config",
@@ -455,6 +560,88 @@ pub fn run() -> Report {
             "Todavía no hay ~/.config/noct; se creará al aplicar un tema.".to_string()
         },
         None,
+    ));
+
+    // 11. Puente de configuración Niri ↔ Umbriel.
+    let profile_file = crate::profile::profile_path();
+    if profile_file.exists() {
+        match crate::profile::Profile::load(&profile_file) {
+            Ok(profile) => checks.push(check(
+                "bridge.profile",
+                "Perfil canónico disponible",
+                Severity::Ok,
+                format!(
+                    "{} · origen: {} · {} regla(s) de ventana",
+                    profile_file.display(),
+                    if profile.meta.source.is_empty() {
+                        "?"
+                    } else {
+                        &profile.meta.source
+                    },
+                    profile.window_rules.len()
+                ),
+                None,
+            )),
+            Err(err) => checks.push(check(
+                "bridge.profile",
+                "Perfil canónico inválido",
+                Severity::Warn,
+                format!("{err:#}"),
+                Some("Vuelve a exportar con `noct bridge export`"),
+            )),
+        }
+    } else {
+        checks.push(check(
+            "bridge.profile",
+            "Sin perfil canónico",
+            Severity::Info,
+            "Todavía no se ha exportado la configuración para el puente.",
+            Some("Ejecuta `noct bridge export`"),
+        ));
+    }
+
+    let (niri_exists, niri_included) = crate::profile::niri_bridge_status();
+    checks.push(check(
+        "bridge.niri",
+        "Fragmento de Niri",
+        if niri_exists && niri_included {
+            Severity::Ok
+        } else if niri_exists || niri_included {
+            Severity::Warn
+        } else {
+            Severity::Info
+        },
+        match (niri_exists, niri_included) {
+            (true, true) => "Fragmento presente e incluido en config.kdl.".to_string(),
+            (true, false) => "El fragmento existe pero config.kdl no lo incluye.".to_string(),
+            (false, true) => {
+                "config.kdl incluye noct-bridge.kdl pero el archivo no existe.".to_string()
+            }
+            (false, false) => "Aún no se ha aplicado el perfil a Niri.".to_string(),
+        },
+        Some("Ejecuta `noct bridge apply --to niri`"),
+    ));
+
+    let (umbriel_exists, umbriel_included) = crate::profile::umbriel_bridge_status();
+    checks.push(check(
+        "bridge.umbriel",
+        "Fragmento de Umbriel",
+        if umbriel_exists && umbriel_included {
+            Severity::Ok
+        } else if umbriel_exists || umbriel_included {
+            Severity::Warn
+        } else {
+            Severity::Info
+        },
+        match (umbriel_exists, umbriel_included) {
+            (true, true) => "Fragmento presente e incluido en config.toml.".to_string(),
+            (true, false) => "El fragmento existe pero config.toml no lo incluye.".to_string(),
+            (false, true) => {
+                "config.toml incluye noct/bridge.toml pero el archivo no existe.".to_string()
+            }
+            (false, false) => "Aún no se ha aplicado el perfil a Umbriel.".to_string(),
+        },
+        Some("Ejecuta `noct bridge apply --to umbriel`"),
     ));
 
     let mut summary = Summary::default();

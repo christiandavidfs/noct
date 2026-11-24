@@ -185,32 +185,24 @@ impl Theme {
         }
     }
 
+    /// Modo a usar al renderizar plantillas: el resuelto por Noctalia.
+    pub fn render_mode(&self) -> &str {
+        match self.resolved_mode.as_deref() {
+            Some("dark") => "dark",
+            Some("light") => "light",
+            _ => match self.mode.as_str() {
+                "dark" => "dark",
+                "light" => "light",
+                _ => "dark",
+            },
+        }
+    }
+
     /// Aplica el tema sobre Noctalia. Con `dry_run` solo describe los pasos.
     pub fn apply(&self, opts: &ApplyOptions) -> Result<Vec<Step>> {
         let mut steps = Vec::new();
 
-        if self.source == "wallpaper" {
-            match self.wallpapers.desktop.as_deref() {
-                Some(desktop) if Path::new(desktop).exists() => {
-                    exec_step(
-                        &mut steps,
-                        opts.dry_run,
-                        "Aplicar wallpaper de escritorio",
-                        "noctalia",
-                        &["msg", "wallpaper-set", desktop],
-                    )?;
-                }
-                Some(desktop) => steps.push(Step {
-                    description: "Aplicar wallpaper de escritorio".to_string(),
-                    command: None,
-                    executed: false,
-                    ok: false,
-                    output: Some(format!("no existe: {desktop}")),
-                }),
-                None => {}
-            }
-        }
-
+        // 1. Persistir la selección de paleta.
         exec_step(
             &mut steps,
             opts.dry_run,
@@ -224,13 +216,78 @@ impl Theme {
             ],
         )?;
 
+        // 2. Renderizar plantillas desde el wallpaper y el esquema.
+        //    `templates-apply` reutiliza la paleta en memoria y no reacciona a
+        //    `color-scheme-set`; `noctalia theme --builtin-config` sí lo hace.
+        if self.source == "wallpaper" {
+            match self.wallpapers.desktop.as_deref() {
+                Some(desktop) if Path::new(desktop).exists() => {
+                    exec_step(
+                        &mut steps,
+                        opts.dry_run,
+                        "Renderizar plantillas del tema",
+                        "noctalia",
+                        &[
+                            "theme",
+                            desktop,
+                            "--scheme",
+                            self.scheme.as_str(),
+                            "--builtin-config",
+                            "--default-mode",
+                            self.render_mode(),
+                        ],
+                    )?;
+                }
+                Some(desktop) => steps.push(Step {
+                    description: "Renderizar plantillas del tema".to_string(),
+                    command: None,
+                    executed: false,
+                    ok: false,
+                    output: Some(format!("no existe el wallpaper: {desktop}")),
+                }),
+                None => {}
+            }
+        }
+
+        // 3. Compatibilidad de claves con el Umbriel instalado.
+        compat_step(&mut steps, opts.dry_run);
+
+        // 4. Hacer que el shell recargue la configuración y la paleta.
         exec_step(
             &mut steps,
             opts.dry_run,
-            "Aplicar plantillas de tema",
+            "Recargar Noctalia",
+            "noctalia",
+            &["msg", "config-reload"],
+        )?;
+
+        // 5. Persistir el wallpaper (shell, greeter y sesión).
+        if self.source == "wallpaper" {
+            if let Some(desktop) = self.wallpapers.desktop.as_deref() {
+                if Path::new(desktop).exists() {
+                    exec_step(
+                        &mut steps,
+                        opts.dry_run,
+                        "Aplicar wallpaper",
+                        "noctalia",
+                        &["msg", "wallpaper-set", desktop],
+                    )?;
+                }
+            }
+        }
+
+        // 6. Red de seguridad para plantillas community/custom.
+        exec_step(
+            &mut steps,
+            opts.dry_run,
+            "Aplicar plantillas restantes",
             "noctalia",
             &["msg", "templates-apply"],
         )?;
+
+        // 7. `templates-apply` vuelve a escribir claves con el nombre antiguo;
+        //    se corrigen otra vez para que la config quede válida al reiniciar.
+        compat_step(&mut steps, opts.dry_run);
 
         if opts.greeter {
             exec_step(
@@ -338,6 +395,29 @@ fn exec_step(
     Ok(())
 }
 
+fn compat_step(steps: &mut Vec<Step>, dry_run: bool) {
+    if dry_run {
+        return;
+    }
+    match crate::config::normalize_umbriel_theme() {
+        Ok(Some(message)) => steps.push(Step {
+            description: "Compatibilidad con Umbriel".to_string(),
+            command: Some(message),
+            executed: true,
+            ok: true,
+            output: None,
+        }),
+        Ok(None) => {}
+        Err(err) => steps.push(Step {
+            description: "Compatibilidad con Umbriel".to_string(),
+            command: None,
+            executed: true,
+            ok: false,
+            output: Some(format!("{err:#}")),
+        }),
+    }
+}
+
 /// Estado de Noctalia antes de aplicar un tema, para poder deshacer.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Backup {
@@ -348,6 +428,8 @@ pub struct Backup {
     pub color_scheme: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub theme_mode: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolved_mode: Option<String>,
 }
 
 impl Backup {
@@ -358,7 +440,10 @@ impl Backup {
                 .filter(|s| !s.is_empty()),
             color_scheme: env::capture("noctalia", &["msg", "color-scheme-get"])
                 .filter(|s| !s.is_empty()),
-            theme_mode: env::capture("noctalia", &["msg", "theme-mode-get"])
+            theme_mode: env::capture("noctalia", &["msg", "config-get", "theme.mode"])
+                .map(|s| s.trim_matches(|c| c == '\'' || c == '"').to_string())
+                .filter(|s| !s.is_empty()),
+            resolved_mode: env::capture("noctalia", &["msg", "theme-mode-get"])
                 .filter(|s| !s.is_empty()),
         }
     }
@@ -395,19 +480,21 @@ impl Backup {
     pub fn restore(&self) -> Result<Vec<Step>> {
         let mut steps = Vec::new();
 
-        if let Some(wallpaper) = &self.wallpaper {
+        if let Some(mode) = &self.theme_mode {
             exec_step(
                 &mut steps,
                 false,
-                "Restaurar wallpaper",
+                "Restaurar modo de tema",
                 "noctalia",
-                &["msg", "wallpaper-set", wallpaper],
+                &["msg", "theme-mode-set", mode],
             )?;
         }
 
+        let mut scheme_pair = None;
         if let Some(scheme) = &self.color_scheme {
             let mut parts = scheme.split_whitespace();
             if let (Some(source), Some(name)) = (parts.next(), parts.next()) {
+                scheme_pair = Some((source.to_string(), name.to_string()));
                 exec_step(
                     &mut steps,
                     false,
@@ -418,15 +505,54 @@ impl Backup {
             }
         }
 
-        if let Some(mode) = &self.theme_mode {
+        if let (Some(wallpaper), Some((source, name))) = (&self.wallpaper, &scheme_pair) {
+            if source == "wallpaper" && Path::new(wallpaper).exists() {
+                let mode = self.resolved_mode.as_deref().unwrap_or("dark");
+                exec_step(
+                    &mut steps,
+                    false,
+                    "Renderizar plantillas restauradas",
+                    "noctalia",
+                    &[
+                        "theme",
+                        wallpaper,
+                        "--scheme",
+                        name,
+                        "--builtin-config",
+                        "--default-mode",
+                        mode,
+                    ],
+                )?;
+            }
+        }
+
+        exec_step(
+            &mut steps,
+            false,
+            "Recargar Noctalia",
+            "noctalia",
+            &["msg", "config-reload"],
+        )?;
+
+        if let Some(wallpaper) = &self.wallpaper {
             exec_step(
                 &mut steps,
                 false,
-                "Restaurar modo de tema",
+                "Restaurar wallpaper",
                 "noctalia",
-                &["msg", "theme-mode-set", mode],
+                &["msg", "wallpaper-set", wallpaper],
             )?;
         }
+
+        exec_step(
+            &mut steps,
+            false,
+            "Restaurar plantillas restantes",
+            "noctalia",
+            &["msg", "templates-apply"],
+        )?;
+
+        compat_step(&mut steps, false);
 
         Ok(steps)
     }

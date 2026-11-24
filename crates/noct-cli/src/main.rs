@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
-use noct_core::{doctor, env, keys, theme};
+use noct_core::{config, doctor, env, keys, profile, theme};
 
 #[derive(Parser)]
 #[command(
@@ -24,6 +24,9 @@ enum Commands {
         /// Salida JSON para scripts
         #[arg(long)]
         json: bool,
+        /// Corrige permisos de plantillas generadas de solo lectura
+        #[arg(long)]
+        fix: bool,
     },
     /// Gestiona temas de Noct
     Theme {
@@ -34,6 +37,60 @@ enum Commands {
     Keys {
         #[command(subcommand)]
         cmd: KeysCmd,
+    },
+    /// Puente de configuración entre Niri y Umbriel
+    Bridge {
+        #[command(subcommand)]
+        cmd: BridgeCmd,
+    },
+}
+
+#[derive(Subcommand)]
+enum BridgeCmd {
+    /// Exporta la configuración del compositor a un perfil canónico
+    Export {
+        /// Compositor de origen (por defecto, el activo)
+        #[arg(long, value_parser = ["niri", "umbriel"])]
+        from: Option<String>,
+        /// Ruta del perfil (por defecto ~/.config/noct/profile.toml)
+        #[arg(long, short)]
+        out: Option<PathBuf>,
+        /// Salida JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Muestra el perfil canónico guardado
+    Show {
+        /// Salida JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Genera y aplica el fragmento gestionado en un compositor
+    Apply {
+        /// Compositor de destino
+        #[arg(long, value_parser = ["niri", "umbriel"])]
+        to: String,
+        /// Muestra el fragmento sin escribir nada
+        #[arg(long)]
+        dry_run: bool,
+        /// Salida JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Exporta del compositor activo y aplica al otro
+    Sync {
+        /// Compositor de origen (por defecto, el activo)
+        #[arg(long, value_parser = ["niri", "umbriel"])]
+        from: Option<String>,
+        /// Muestra los fragmentos sin escribir nada
+        #[arg(long)]
+        dry_run: bool,
+        /// Aplica también al compositor de origen
+        #[arg(long)]
+        both: bool,
+        /// Salida JSON
+        #[arg(long)]
+        json: bool,
     },
 }
 
@@ -137,9 +194,10 @@ fn main() -> ExitCode {
 fn run() -> Result<ExitCode> {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Doctor { json } => cmd_doctor(json),
+        Commands::Doctor { json, fix } => cmd_doctor(json, fix),
         Commands::Theme { cmd } => cmd_theme(cmd),
         Commands::Keys { cmd } => cmd_keys(cmd),
+        Commands::Bridge { cmd } => cmd_bridge(cmd),
     }
 }
 
@@ -151,7 +209,22 @@ fn color(enabled: bool, code: &str, text: &str) -> String {
     }
 }
 
-fn cmd_doctor(json: bool) -> Result<ExitCode> {
+fn cmd_doctor(json: bool, fix: bool) -> Result<ExitCode> {
+    if fix {
+        let fixed = doctor::fix_template_permissions();
+        if fixed.is_empty() {
+            println!("No hay plantillas de solo lectura que corregir.");
+        } else {
+            for path in fixed {
+                println!("✓ Permiso de escritura restaurado: {path}");
+            }
+        }
+        for message in config::fix_all() {
+            println!("✓ {message}");
+        }
+        println!();
+    }
+
     let report = doctor::run();
 
     if json {
@@ -662,5 +735,154 @@ fn cmd_keys(cmd: KeysCmd) -> Result<ExitCode> {
             }
             Ok(ExitCode::SUCCESS)
         }
+    }
+}
+
+fn cmd_bridge(cmd: BridgeCmd) -> Result<ExitCode> {
+    match cmd {
+        BridgeCmd::Export { from, out, json } => {
+            let source = resolve_source(from)?;
+            let report = profile::Profile::export_from(&source)?;
+            let path = out.unwrap_or_else(profile::profile_path);
+            report.profile.save(&path)?;
+
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                println!("Perfil exportado desde {source}");
+                println!("  archivo: {}", path.display());
+                println!("  mapeado: {}", report.mapped.join(", "));
+                if !report.unmapped.is_empty() {
+                    println!("  sin traducir: {}", report.unmapped.join(", "));
+                    println!("  (esas claves siguen viviendo solo en {source}; Noct no las borra)");
+                }
+                println!("\nAplica el perfil al otro compositor con:");
+                let other = if source == "niri" { "umbriel" } else { "niri" };
+                println!("  noct bridge apply --to {other}");
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        BridgeCmd::Show { json } => {
+            let path = profile::profile_path();
+            if !path.exists() {
+                bail!(
+                    "no hay perfil en {}; ejecuta `noct bridge export` primero",
+                    path.display()
+                );
+            }
+            let profile = profile::Profile::load_default()?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&profile)?);
+            } else {
+                println!("{}", profile.to_toml()?);
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        BridgeCmd::Apply { to, dry_run, json } => {
+            let profile = profile::Profile::load_default().with_context(|| {
+                format!(
+                    "no hay perfil en {}; ejecuta `noct bridge export` primero",
+                    profile::profile_path().display()
+                )
+            })?;
+            let (report, content) = profile::apply(&profile, &to, dry_run)?;
+            if dry_run {
+                println!("{content}");
+            }
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else if !dry_run {
+                println!("Destino: {}", report.target);
+                println!("  archivo: {}", report.file);
+                if report.include_added {
+                    println!("  include añadido a la configuración");
+                }
+                if report.validated {
+                    println!("  validación: ok");
+                }
+                println!("  {}", report.message);
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        BridgeCmd::Sync {
+            from,
+            dry_run,
+            both,
+            json,
+        } => {
+            let source = resolve_source(from)?;
+            let report = profile::Profile::export_from(&source)?;
+            let path = profile::profile_path();
+            report.profile.save(&path)?;
+
+            let mut results = Vec::new();
+            let mut failures = Vec::new();
+            for target in ["niri", "umbriel"] {
+                if target == source && !both {
+                    continue;
+                }
+                match profile::apply(&report.profile, target, dry_run) {
+                    Ok((apply_report, content)) => results.push((apply_report, content)),
+                    Err(err) => failures.push(format!("{target}: {err:#}")),
+                }
+            }
+
+            if dry_run {
+                for (apply_report, content) in &results {
+                    println!("# {}", apply_report.file);
+                    println!("{content}");
+                }
+            }
+
+            if json {
+                let payload = serde_json::json!({
+                    "source": source,
+                    "profile": path.display().to_string(),
+                    "mapped": report.mapped,
+                    "unmapped": report.unmapped,
+                    "applied": results.iter().map(|(r, _)| r).collect::<Vec<_>>(),
+                    "failures": failures,
+                });
+                println!("{}", serde_json::to_string_pretty(&payload)?);
+            } else {
+                println!("Sincronizado desde {source} → {}", path.display());
+                for (apply_report, _) in &results {
+                    println!(
+                        "  {}: {}{}",
+                        apply_report.target,
+                        apply_report.message,
+                        if apply_report.include_added {
+                            " (include añadido)"
+                        } else {
+                            ""
+                        }
+                    );
+                }
+                if !report.unmapped.is_empty() {
+                    println!("  sin traducir: {}", report.unmapped.join(", "));
+                }
+            }
+
+            if !failures.is_empty() {
+                for failure in &failures {
+                    eprintln!("noct: {failure}");
+                }
+                return Ok(ExitCode::FAILURE);
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+    }
+}
+
+fn resolve_source(from: Option<String>) -> Result<String> {
+    if let Some(from) = from {
+        return Ok(from);
+    }
+    let detected = env::detect_compositor().as_str().to_string();
+    match detected.as_str() {
+        "niri" | "umbriel" => Ok(detected),
+        _ => bail!(
+            "no se pudo detectar el compositor activo; indica el origen con --from niri|umbriel"
+        ),
     }
 }
