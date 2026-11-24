@@ -62,10 +62,26 @@ pub fn load_umbriel(path: &Path) -> Result<Vec<Keybind>> {
 
 pub fn load_umbriel_default() -> Result<Vec<Keybind>> {
     let path = umbriel_config_path();
-    if !path.exists() {
-        return Ok(Vec::new());
+    let mut binds = if path.exists() {
+        load_umbriel(&path)?
+    } else {
+        Vec::new()
+    };
+
+    let managed = managed_path();
+    for bind in load_managed()? {
+        binds.push(Keybind {
+            chord: bind.chord,
+            action: bind.action,
+            repeat: bind.repeat,
+            submap: None,
+            compositor: "umbriel".to_string(),
+            file: managed.display().to_string(),
+            line: 0,
+        });
     }
-    load_umbriel(&path)
+
+    Ok(binds)
 }
 
 /// Atajos definidos en los KDL de Niri.
@@ -276,9 +292,7 @@ pub fn find_conflicts(binds: &[Keybind]) -> Vec<Conflict> {
 fn extract_legacy(line: &str) -> Option<String> {
     let idx = line.find("qs -c noctalia-shell")?;
     let rest = &line[idx..];
-    let end = rest
-        .find(['"', '\'', ';'])
-        .unwrap_or(rest.len());
+    let end = rest.find(['"', '\'', ';']).unwrap_or(rest.len());
     Some(rest[..end].trim().to_string())
 }
 

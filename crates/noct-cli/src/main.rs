@@ -606,6 +606,19 @@ fn cmd_keys(cmd: KeysCmd) -> Result<ExitCode> {
             }
 
             println!("✓ {chord} → {action}");
+
+            let existing = keys::load_umbriel_default().unwrap_or_default();
+            let normalized = keys::normalize_chord(&chord);
+            for bind in existing
+                .iter()
+                .filter(|b| keys::normalize_chord(&b.chord) == normalized && b.action != action)
+            {
+                println!(
+                    "! Aviso: {} ya está usado por `{}` ({}:{})",
+                    bind.chord, bind.action, bind.file, bind.line
+                );
+            }
+
             if env::umbriel_alive() {
                 let reload = env::run("umbriel", &["msg", "config-reload"]);
                 match reload {
