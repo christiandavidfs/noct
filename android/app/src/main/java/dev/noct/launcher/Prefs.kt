@@ -8,6 +8,8 @@ data class LauncherPrefs(
     val axis: SwipeAxis = SwipeAxis.HORIZONTAL,
     val invert: Boolean = false,
     val thresholdDp: Int = 64,
+    val edgeOnly: Boolean = true,
+    val edgeWidthDp: Int = 28,
     val showClock: Boolean = true,
     val showBattery: Boolean = true,
     val showRecents: Boolean = true,
@@ -26,6 +28,8 @@ class Prefs(context: Context) {
             .getOrDefault(SwipeAxis.HORIZONTAL),
         invert = sp.getBoolean("invert", false),
         thresholdDp = sp.getInt("thresholdDp", 64),
+        edgeOnly = sp.getBoolean("edgeOnly", true),
+        edgeWidthDp = sp.getInt("edgeWidthDp", 28),
         showClock = sp.getBoolean("showClock", true),
         showBattery = sp.getBoolean("showBattery", true),
         showRecents = sp.getBoolean("showRecents", true),
@@ -41,6 +45,8 @@ class Prefs(context: Context) {
             .putString("axis", prefs.axis.name)
             .putBoolean("invert", prefs.invert)
             .putInt("thresholdDp", prefs.thresholdDp)
+            .putBoolean("edgeOnly", prefs.edgeOnly)
+            .putInt("edgeWidthDp", prefs.edgeWidthDp)
             .putBoolean("showClock", prefs.showClock)
             .putBoolean("showBattery", prefs.showBattery)
             .putBoolean("showRecents", prefs.showRecents)

@@ -1,5 +1,6 @@
 package dev.noct.launcher
 
+import android.appwidget.AppWidgetHost
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -15,6 +16,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,10 +24,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -43,9 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
@@ -55,10 +55,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -72,6 +70,8 @@ fun HomeScreen(
     recents: List<AppEntry>,
     hasUsageAccess: Boolean,
     themeName: String?,
+    widgetHost: AppWidgetHost,
+    hostedWidgets: List<HostedWidget>,
     onOpenDrawer: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenSync: () -> Unit,
@@ -80,6 +80,7 @@ fun HomeScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val thresholdPx = with(LocalDensity.current) { prefs.thresholdDp.dp.toPx() }
+    val edgePx = with(LocalDensity.current) { prefs.edgeWidthDp.dp.toPx() }
     var recentIndex by rememberSaveable { mutableIntStateOf(0) }
     var pendingName by remember { mutableStateOf<String?>(null) }
     var switching by remember { mutableStateOf(false) }
@@ -120,74 +121,98 @@ fun HomeScreen(
                 axis = prefs.axis,
                 invert = prefs.invert,
                 thresholdPx = thresholdPx,
+                edgeOnly = prefs.edgeOnly,
+                edgePx = edgePx,
                 onSwitchRecent = { switchRecent(it) },
                 onOpenDrawer = onOpenDrawer,
             )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 26.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = 26.dp,
+                end = 26.dp,
+                top = 18.dp,
+                bottom = 92.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onOpenSettings),
-            ) {
-                if (prefs.showClock) {
-                    ClockWidget(clock24h = prefs.clock24h)
-                }
-                if (prefs.showBattery) {
-                    Spacer(Modifier.height(10.dp))
-                    BatteryWidget(battery)
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .clickable(onClick = onOpenSettings),
+                ) {
+                    if (prefs.showClock) {
+                        ClockWidget(clock24h = prefs.clock24h)
+                    }
+                    if (prefs.showBattery) {
+                        Spacer(Modifier.height(10.dp))
+                        BatteryWidget(battery)
+                    }
                 }
             }
 
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                if (prefs.showRecents) {
+            if (hostedWidgets.isNotEmpty()) {
+                items(hostedWidgets, key = { it.id }) { widget ->
+                    HostedWidgetView(
+                        host = widgetHost,
+                        widget = widget,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                    )
+                }
+            }
+
+            if (prefs.showRecents) {
+                item {
                     RecentsWidget(
                         recents = recents,
                         hasUsageAccess = hasUsageAccess,
+                        edgeOnly = prefs.edgeOnly,
                         onRequestUsageAccess = onRequestUsageAccess,
                         onOpenDrawer = onOpenDrawer,
                     )
                 }
-                if (prefs.showSync) {
+            }
+
+            if (prefs.showSync) {
+                item {
                     SyncWidget(themeName = themeName, onOpenSync = onOpenSync)
                 }
             }
+        }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = "dos dedos · apps",
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-                )
-                Box(
-                    modifier = Modifier
-                        .width(44.dp)
-                        .height(4.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f))
-                        .clickable(onClick = onOpenDrawer)
-                )
-                Text(
-                    text = "ajustes",
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-                    modifier = Modifier.clickable(onClick = onOpenSettings),
-                )
-            }
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = "dos dedos · apps",
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+            )
+            Box(
+                modifier = Modifier
+                    .width(44.dp)
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f))
+                    .clickable(onClick = onOpenDrawer)
+            )
+            Text(
+                text = "ajustes",
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                modifier = Modifier.clickable(onClick = onOpenSettings),
+            )
         }
 
         AnimatedVisibility(
@@ -322,6 +347,7 @@ private fun BatteryWidget(battery: BatteryInfo) {
 private fun RecentsWidget(
     recents: List<AppEntry>,
     hasUsageAccess: Boolean,
+    edgeOnly: Boolean,
     onRequestUsageAccess: () -> Unit,
     onOpenDrawer: () -> Unit,
 ) {
@@ -370,7 +396,7 @@ private fun RecentsWidget(
                 }
             }
             Text(
-                text = "Dos dedos para cambiar",
+                text = if (edgeOnly) "Dos dedos desde el borde" else "Dos dedos para cambiar",
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
             )
@@ -411,11 +437,20 @@ private fun Modifier.homeGestures(
     axis: SwipeAxis,
     invert: Boolean,
     thresholdPx: Float,
+    edgeOnly: Boolean,
+    edgePx: Float,
     onSwitchRecent: (Int) -> Unit,
     onOpenDrawer: () -> Unit,
-): Modifier = pointerInput(axis, invert, thresholdPx) {
+): Modifier = pointerInput(axis, invert, thresholdPx, edgeOnly, edgePx) {
     awaitEachGesture {
-        awaitFirstDown(requireUnconsumed = false)
+        val down = awaitFirstDown(requireUnconsumed = false)
+        val start = down.position
+        val nearEdge = when (axis) {
+            SwipeAxis.HORIZONTAL -> start.x <= edgePx || start.x >= size.width - edgePx
+            SwipeAxis.VERTICAL -> start.y <= edgePx || start.y >= size.height - edgePx
+        }
+        val twoFingerAllowed = !edgeOnly || nearEdge
+
         var maxPointers = 1
         var dx = 0f
         var dy = 0f
@@ -429,20 +464,20 @@ private fun Modifier.homeGestures(
                 dx += change.positionChange().x
                 dy += change.positionChange().y
             }
-            if (maxPointers >= 2) {
+            if (maxPointers >= 2 && twoFingerAllowed) {
                 event.changes.forEach { it.consume() }
             }
             pressed = event.changes.any { it.pressed }
         }
 
-        if (maxPointers >= 2) {
+        if (maxPointers >= 2 && twoFingerAllowed) {
             val delta = if (axis == SwipeAxis.HORIZONTAL) dx else dy
             if (abs(delta) >= thresholdPx) {
                 var direction = if (delta < 0) 1 else -1
                 if (invert) direction = -direction
                 onSwitchRecent(direction)
             }
-        } else if (dy < -thresholdPx && abs(dy) > abs(dx)) {
+        } else if (maxPointers == 1 && dy < -thresholdPx && abs(dy) > abs(dx)) {
             onOpenDrawer()
         }
     }

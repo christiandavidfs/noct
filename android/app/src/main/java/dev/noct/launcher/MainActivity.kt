@@ -1,5 +1,7 @@
 package dev.noct.launcher
 
+import android.appwidget.AppWidgetHost
+import android.appwidget.AppWidgetManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -11,6 +13,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +58,30 @@ private fun NoctLauncherApp() {
     var loading by remember { mutableStateOf(true) }
     var screen by rememberSaveable { mutableStateOf("home") }
 
+    val widgetHost = remember { AppWidgetHost(context, 1024) }
+    DisposableEffect(widgetHost) {
+        widgetHost.startListening()
+        onDispose { widgetHost.stopListening() }
+    }
+    val widgetStore = remember { WidgetStore(context) }
+    var hostedWidgets by remember { mutableStateOf(widgetStore.load()) }
+
+    fun saveWidgets(list: List<HostedWidget>) {
+        hostedWidgets = list
+        widgetStore.save(list)
+    }
+
+    LaunchedEffect(Unit) {
+        val manager = AppWidgetManager.getInstance(context)
+        val valid = hostedWidgets.filter { manager.getAppWidgetInfo(it.id) != null }
+        if (valid.size != hostedWidgets.size) {
+            hostedWidgets.filterNot { it in valid }.forEach {
+                runCatching { widgetHost.deleteAppWidgetId(it.id) }
+            }
+            saveWidgets(valid)
+        }
+    }
+
     fun refreshRecents() {
         hasUsageAccess = UsageAccess.hasPermission(context)
         if (apps.isEmpty()) return
@@ -86,6 +113,8 @@ private fun NoctLauncherApp() {
 
     BackHandler(enabled = screen != "home") {
         screen = when (screen) {
+            "widgetPicker" -> "widgets"
+            "widgets" -> "settings"
             "sync" -> "settings"
             else -> "home"
         }
@@ -112,9 +141,29 @@ private fun NoctLauncherApp() {
                     },
                     onBack = { screen = "home" },
                     onOpenSync = { screen = "sync" },
+                    onOpenWidgets = { screen = "widgets" },
                     onRequestUsageAccess = {
                         UsageAccess.openSettings(context)
                     },
+                )
+
+                "widgets" -> WidgetsScreen(
+                    hosted = hostedWidgets,
+                    onAdd = { screen = "widgetPicker" },
+                    onRemove = { widget ->
+                        runCatching { widgetHost.deleteAppWidgetId(widget.id) }
+                        saveWidgets(hostedWidgets.filterNot { it.id == widget.id })
+                    },
+                    onBack = { screen = "settings" },
+                )
+
+                "widgetPicker" -> WidgetPickerScreen(
+                    host = widgetHost,
+                    onAdded = { widget ->
+                        saveWidgets(hostedWidgets + widget)
+                        screen = "widgets"
+                    },
+                    onBack = { screen = "widgets" },
                 )
 
                 "sync" -> SyncScreen(
@@ -132,6 +181,8 @@ private fun NoctLauncherApp() {
                         recents = recents,
                         hasUsageAccess = hasUsageAccess,
                         themeName = palette?.name,
+                        widgetHost = widgetHost,
+                        hostedWidgets = hostedWidgets,
                         onOpenDrawer = { screen = "drawer" },
                         onOpenSettings = { screen = "settings" },
                         onOpenSync = { screen = "sync" },

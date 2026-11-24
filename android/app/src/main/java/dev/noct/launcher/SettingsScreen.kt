@@ -38,6 +38,7 @@ fun SettingsScreen(
     onChange: (LauncherPrefs) -> Unit,
     onBack: () -> Unit,
     onOpenSync: () -> Unit,
+    onOpenWidgets: () -> Unit,
     onRequestUsageAccess: () -> Unit,
 ) {
     Scaffold(
@@ -68,6 +69,21 @@ fun SettingsScreen(
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            item { SectionTitle("Widgets de Android") }
+            item {
+                Button(onClick = onOpenWidgets, modifier = Modifier.fillMaxWidth()) {
+                    Text("Añadir o quitar widgets")
+                }
+                Text(
+                    text = "Los widgets reales de Android se colocan en el home.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+
+            item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
+
             item { SectionTitle("Widgets del home") }
             item {
                 SwitchSetting(
@@ -150,6 +166,26 @@ fun SettingsScreen(
                     checked = prefs.invert,
                     onChange = { onChange(prefs.copy(invert = it)) },
                 )
+            }
+            item {
+                SwitchSetting(
+                    title = "Solo desde el borde",
+                    description = "Evita falsos positivos al hacer scroll",
+                    checked = prefs.edgeOnly,
+                    onChange = { onChange(prefs.copy(edgeOnly = it)) },
+                )
+            }
+            if (prefs.edgeOnly) {
+                item {
+                    SliderSetting(
+                        title = "Ancho del borde",
+                        value = prefs.edgeWidthDp.toFloat(),
+                        valueText = "${prefs.edgeWidthDp} dp",
+                        range = 16f..60f,
+                        steps = 0,
+                        onChange = { onChange(prefs.copy(edgeWidthDp = it.toInt())) },
+                    )
+                }
             }
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
