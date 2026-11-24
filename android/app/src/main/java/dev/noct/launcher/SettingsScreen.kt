@@ -102,8 +102,8 @@ fun SettingsScreen(
             }
             item {
                 SwitchSetting(
-                    title = "Apps recientes",
-                    description = "Carrusel de apps usadas hace poco",
+                    title = "Apps activas (aprox.)",
+                    description = "Carrusel de apps que siguen vivas",
                     checked = prefs.showRecents,
                     onChange = { onChange(prefs.copy(showRecents = it)) },
                 )
@@ -138,7 +138,7 @@ fun SettingsScreen(
             item { SectionTitle("Cambiar de app") }
             item {
                 Text(
-                    text = "El home muestra un carrusel horizontal con las apps usadas recientemente. Desliza con un dedo, toca para abrir y usa la X para quitarla.",
+                    text = "El home muestra un carrusel horizontal con las apps que UsageStats considera activas. Es una aproximación: desliza con un dedo, toca para abrir y usa la X para quitarla.",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -146,13 +146,13 @@ fun SettingsScreen(
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
 
-            item { SectionTitle("Apps recientes") }
+            item { SectionTitle("Apps activas (aprox.)") }
             item {
                 Text(
                     text = if (hasUsageAccess) {
-                        "Acceso de uso concedido. Noct puede ver las apps usadas recientemente."
+                        "Acceso de uso concedido. Noct estima las apps activas con UsageStats."
                     } else {
-                        "Sin acceso de uso. Android no deja ver qué apps usaste recientemente."
+                        "Sin acceso de uso. Android no deja estimar qué apps siguen activas."
                     },
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

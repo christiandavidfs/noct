@@ -446,13 +446,13 @@ private fun RecentsCarousel(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "RECIENTES",
+                text = "ACTIVAS",
                 fontSize = 10.sp,
                 letterSpacing = 1.5.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             )
             Text(
-                text = if (recents.isEmpty()) "" else "desliza · toca",
+                text = if (recents.isEmpty()) "" else "aprox · desliza · toca",
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
             )
