@@ -159,7 +159,7 @@ fun HomeScreen(
 
                     "recents" -> if (prefs.showRecents) {
                         EditableSection(
-                            title = "Apps en marcha",
+                            title = "Apps activas",
                             section = section,
                             editing = editMode,
                             canUp = canUp,
@@ -176,37 +176,6 @@ fun HomeScreen(
                         }
                     }
 
-                    "widgets" -> if (hostedWidgets.isNotEmpty() || editMode) {
-                        EditableSection(
-                            title = "Widgets",
-                            section = section,
-                            editing = editMode,
-                            canUp = canUp,
-                            canDown = canDown,
-                            onMove = onMoveSection,
-                        ) {
-                            if (hostedWidgets.isEmpty()) {
-                                Text(
-                                    text = "Sin widgets · añádelos desde ajustes",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            } else {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    hostedWidgets.forEach { widget ->
-                                        HostedWidgetView(
-                                            host = widgetHost,
-                                            widget = widget,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 2.dp),
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     "sync" -> if (prefs.showSync) {
                         EditableSection(
                             title = "Tema",
@@ -219,6 +188,29 @@ fun HomeScreen(
                             SyncWidget(themeName = themeName, onOpenSync = onOpenSync)
                         }
                     }
+                    else -> if (section.startsWith("widget:")) {
+                        val id = section.removePrefix("widget:").toIntOrNull()
+                        val widget = hostedWidgets.firstOrNull { it.id == id }
+                        if (widget != null) {
+                            EditableSection(
+                                title = widgetLabel(context, widget.provider),
+                                section = section,
+                                editing = editMode,
+                                canUp = canUp,
+                                canDown = canDown,
+                                onMove = onMoveSection,
+                            ) {
+                                HostedWidgetView(
+                                    host = widgetHost,
+                                    widget = widget,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 2.dp),
+                                )
+                            }
+                        }
+                    }
+
                 }
             }
         }

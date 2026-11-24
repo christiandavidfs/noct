@@ -48,6 +48,30 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private fun normalizeHomeOrder(order: List<String>, widgets: List<HostedWidget>): List<String> {
+    val baseSections = listOf("clock", "battery", "recents", "sync")
+    val widgetKeys = widgets.map { "widget:${it.id}" }
+    val oldGroupIndex = order.indexOf("widgets")
+    val kept = order
+        .filter { it != "widgets" && (it in baseSections || it in widgetKeys) }
+        .toMutableList()
+
+    baseSections.forEach { section ->
+        if (section !in kept) kept.add(section)
+    }
+
+    val missing = widgetKeys.filter { it !in kept }
+    missing.forEachIndexed { index, key ->
+        val position = if (oldGroupIndex >= 0) {
+            (oldGroupIndex + index).coerceIn(0, kept.size)
+        } else {
+            kept.size
+        }
+        kept.add(position, key)
+    }
+    return kept.distinct()
+}
+
 @Composable
 private fun NoctLauncherApp() {
     val context = LocalContext.current
@@ -94,6 +118,11 @@ private fun NoctLauncherApp() {
                 runCatching { widgetHost.deleteAppWidgetId(it.id) }
             }
             saveWidgets(valid)
+        }
+        val normalized = normalizeHomeOrder(prefs.homeOrder, valid)
+        if (normalized != prefs.homeOrder) {
+            prefs = prefs.copy(homeOrder = normalized)
+            store.save(prefs)
         }
     }
 
@@ -194,7 +223,11 @@ private fun NoctLauncherApp() {
                     onAdd = { screen = "widgetPicker" },
                     onRemove = { widget ->
                         runCatching { widgetHost.deleteAppWidgetId(widget.id) }
-                        saveWidgets(hostedWidgets.filterNot { it.id == widget.id })
+                        val widgets = hostedWidgets.filterNot { it.id == widget.id }
+                        saveWidgets(widgets)
+                        val order = normalizeHomeOrder(prefs.homeOrder, widgets)
+                        prefs = prefs.copy(homeOrder = order)
+                        store.save(prefs)
                     },
                     onBack = { screen = "settings" },
                 )
@@ -202,7 +235,11 @@ private fun NoctLauncherApp() {
                 "widgetPicker" -> WidgetPickerScreen(
                     host = widgetHost,
                     onAdded = { widget ->
-                        saveWidgets(hostedWidgets + widget)
+                        val widgets = hostedWidgets + widget
+                        saveWidgets(widgets)
+                        val order = normalizeHomeOrder(prefs.homeOrder, widgets)
+                        prefs = prefs.copy(homeOrder = order)
+                        store.save(prefs)
                         screen = "widgets"
                     },
                     onBack = { screen = "widgets" },
