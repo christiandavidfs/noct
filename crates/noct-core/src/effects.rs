@@ -43,6 +43,67 @@ fn custom_asset(kind: &str, name: &str) -> Option<(&'static str, &'static str)> 
     }
 }
 
+fn tint_path() -> PathBuf {
+    custom_root().join("screen").join("noct-mono").join("tint")
+}
+
+/// Tinte activo del preset Mono (`None` = gris puro).
+pub fn current_tint() -> Option<String> {
+    let text = std::fs::read_to_string(tint_path()).ok()?;
+    let value = text.trim().to_ascii_lowercase();
+    if value.is_empty() || value == "none" || value == "gris" {
+        None
+    } else {
+        Some(value)
+    }
+}
+
+fn parse_hex(color: &str) -> Option<(u8, u8, u8)> {
+    let hex = color.trim().trim_start_matches('#');
+    let expanded = match hex.len() {
+        3 => {
+            let mut out = String::new();
+            for ch in hex.chars() {
+                out.push(ch);
+                out.push(ch);
+            }
+            out
+        }
+        6 => hex.to_string(),
+        _ => return None,
+    };
+    let r = u8::from_str_radix(&expanded[0..2], 16).ok()?;
+    let g = u8::from_str_radix(&expanded[2..4], 16).ok()?;
+    let b = u8::from_str_radix(&expanded[4..6], 16).ok()?;
+    Some((r, g, b))
+}
+
+fn normalize_tint(color: &str) -> Result<Option<String>> {
+    let value = color.trim().to_ascii_lowercase();
+    if value.is_empty() || value == "none" || value == "off" || value == "gris" || value == "gray" {
+        return Ok(None);
+    }
+    let (r, g, b) = parse_hex(&value)
+        .with_context(|| format!("color inválido: {color} (usa #RRGGBB o none)"))?;
+    Ok(Some(format!("#{r:02x}{g:02x}{b:02x}")))
+}
+
+fn render_mono_shader(tint: Option<&str>) -> String {
+    let (r, g, b, amount) = match tint.and_then(parse_hex) {
+        Some((r, g, b)) => {
+            let max = r.max(g).max(b).max(1) as f64;
+            ((r as f64 / max), (g as f64 / max), (b as f64 / max), 0.82)
+        }
+        None => (1.0, 1.0, 1.0, 0.0),
+    };
+    CUSTOM_MONO_SHADER
+        .replace("__R__", &format!("{r:.4}"))
+        .replace("__G__", &format!("{g:.4}"))
+        .replace("__B__", &format!("{b:.4}"))
+        .replace("__MIX__", &format!("{amount:.2}"))
+        .replace("// __NOCT_TINT__ se sustituye al aplicar el preset.\n", "")
+}
+
 fn write_if_changed(path: &Path, content: &str) -> Result<()> {
     if std::fs::read_to_string(path).ok().as_deref() == Some(content) {
         return Ok(());
@@ -60,7 +121,12 @@ fn ensure_custom_assets() -> Result<()> {
         std::fs::create_dir_all(&dir)
             .with_context(|| format!("no se pudo crear {}", dir.display()))?;
         write_if_changed(&dir.join("effect.toml"), effect)?;
-        write_if_changed(&dir.join("shader.glsl"), shader)?;
+        let tint = current_tint();
+        write_if_changed(
+            &dir.join("shader.glsl"),
+            &render_mono_shader(tint.as_deref()),
+        )?;
+        let _ = shader;
     }
     Ok(())
 }
@@ -178,7 +244,7 @@ const PRESETS: &[Preset] = &[
     Preset {
         id: "mono",
         name: "Noct Mono",
-        description: "Todo el escritorio en blanco y negro, con scanlines y viñeta.",
+        description: "Todo el escritorio en blanco y negro o duotono, con scanlines y viñeta.",
         border: None,
         cursor: None,
         screen: Some("noct-mono"),
@@ -400,7 +466,6 @@ pub fn apply(id: &str, dry_run: bool) -> Result<(ApplyReport, String)> {
         bail!("preset desconocido: {id}. Disponibles: {}", ids.join(", "));
     };
 
-    ensure_custom_assets()?;
     let includes = effect_includes(preset)?;
     let content = render_effects(preset.id, preset);
     let file = effects_file();
@@ -429,6 +494,8 @@ pub fn apply(id: &str, dry_run: bool) -> Result<(ApplyReport, String)> {
         report.message = "dry-run: no se escribió nada".into();
         return Ok((report, content));
     }
+
+    ensure_custom_assets()?;
 
     let previous_effects = std::fs::read_to_string(&file).ok();
     let config = config_path();
@@ -481,9 +548,69 @@ fn restore(path: &Path, previous: Option<String>) {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct TintReport {
+    /// Tinte normalizado, o `None` para gris puro.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tint: Option<String>,
+    pub preset: String,
+    pub file: String,
+    pub written: bool,
+    pub validated: bool,
+    pub reloaded: bool,
+    pub message: String,
+}
+
+/// Cambia el tinte del preset Mono y lo deja aplicado.
+pub fn set_tint(color: &str, dry_run: bool) -> Result<(TintReport, String)> {
+    let normalized = normalize_tint(color)?;
+    let shader = render_mono_shader(normalized.as_deref());
+    let file = effects_file();
+
+    if dry_run {
+        return Ok((
+            TintReport {
+                tint: normalized,
+                preset: "mono".into(),
+                file: file.display().to_string(),
+                written: false,
+                validated: false,
+                reloaded: false,
+                message: "dry-run: no se escribió nada".into(),
+            },
+            shader,
+        ));
+    }
+
+    let path = tint_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)
+            .with_context(|| format!("no se pudo crear {}", parent.display()))?;
+    }
+    let value = normalized.clone().unwrap_or_else(|| "none".to_string());
+    std::fs::write(&path, value)
+        .with_context(|| format!("no se pudo escribir {}", path.display()))?;
+
+    let (apply_report, _) = apply("mono", false)?;
+    Ok((
+        TintReport {
+            tint: normalized,
+            preset: "mono".into(),
+            file: apply_report.file,
+            written: true,
+            validated: apply_report.validated,
+            reloaded: apply_report.reloaded,
+            message: apply_report.message,
+        },
+        shader,
+    ))
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct CurrentEffects {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tint: Option<String>,
     pub effects: Vec<String>,
     pub animations: Vec<String>,
 }
@@ -494,6 +621,7 @@ pub fn current() -> Result<CurrentEffects> {
     if !path.exists() {
         return Ok(CurrentEffects {
             preset: None,
+            tint: current_tint(),
             effects: Vec::new(),
             animations: Vec::new(),
         });
@@ -530,6 +658,7 @@ pub fn current() -> Result<CurrentEffects> {
 
     Ok(CurrentEffects {
         preset,
+        tint: current_tint(),
         effects,
         animations,
     })
@@ -566,4 +695,191 @@ mod tests {
         assert!(presets().iter().any(|p| p.id == "matrix"));
         assert!(presets().iter().any(|p| p.id == "mono"));
     }
+}
+
+// ---------------------------------------------------------------------------
+// Widget de Noctalia
+// ---------------------------------------------------------------------------
+
+const PLUGIN_TOML: &str = include_str!("../assets/noctalia-plugin/plugin.toml");
+const PLUGIN_SHORTCUT: &str = include_str!("../assets/noctalia-plugin/shortcut.luau");
+const PLUGIN_PANEL: &str = include_str!("../assets/noctalia-plugin/panel.luau");
+
+#[derive(Debug, Clone, Serialize)]
+pub struct WidgetReport {
+    pub plugin_dir: String,
+    pub files: Vec<String>,
+    pub enabled: bool,
+    pub state_file: String,
+    pub settings_file: String,
+    pub shortcut_added: bool,
+    pub noct_in_path: bool,
+}
+
+fn inline_shortcut(kind: &str) -> toml_edit::Value {
+    let mut table = toml_edit::InlineTable::new();
+    table.insert("type", kind.into());
+    toml_edit::Value::InlineTable(table)
+}
+
+/// Añade el tile al control center si aún no está. Mantiene como máximo 6.
+fn ensure_control_center_shortcut() -> Result<(bool, String)> {
+    let path = env::state_home().join("noctalia").join("settings.toml");
+    if !path.exists() {
+        return Ok((false, path.display().to_string()));
+    }
+    let text = std::fs::read_to_string(&path)
+        .with_context(|| format!("no se pudo leer {}", path.display()))?;
+    let mut doc: DocumentMut = text
+        .parse()
+        .with_context(|| format!("{} no es TOML válido", path.display()))?;
+
+    let control = doc
+        .entry("control_center")
+        .or_insert(Item::Table(toml_edit::Table::new()));
+    let control = control
+        .as_table_like_mut()
+        .context("control_center no es una tabla")?;
+    let entry = control.entry("shortcuts").or_insert_with(|| {
+        let mut array = Array::new();
+        for kind in [
+            "wifi",
+            "bluetooth",
+            "caffeine",
+            "nightlight",
+            "notification",
+            "power_profile",
+        ] {
+            array.push(inline_shortcut(kind));
+        }
+        Item::Value(Value::Array(array))
+    });
+    if !entry.is_array() {
+        return Ok((false, path.display().to_string()));
+    }
+    let array = entry.as_array_mut().context("shortcuts no es un array")?;
+
+    let target = "noct/effects:effects";
+    let has_target = array.iter().any(|value| {
+        value
+            .as_inline_table()
+            .and_then(|table| table.get("type"))
+            .and_then(|value| value.as_str())
+            == Some(target)
+    });
+    if has_target {
+        return Ok((false, path.display().to_string()));
+    }
+
+    // El Home muestra hasta 6 atajos. Si ya hay 6, libera un hueco quitando
+    // caffeine o, en su defecto, power_profile.
+    if array.len() >= 6 {
+        let candidates = ["caffeine", "power_profile"];
+        let mut removed = false;
+        for candidate in candidates {
+            let index = array.iter().position(|value| {
+                value
+                    .as_inline_table()
+                    .and_then(|table| table.get("type"))
+                    .and_then(|value| value.as_str())
+                    == Some(candidate)
+            });
+            if let Some(index) = index {
+                array.remove(index);
+                removed = true;
+                break;
+            }
+        }
+        if !removed && array.len() >= 6 {
+            array.remove(array.len() - 1);
+        }
+    }
+    array.insert(0, inline_shortcut(target));
+
+    let previous = std::fs::read_to_string(&path).ok();
+    if let Some(previous) = &previous {
+        let backup = path.with_extension("toml.noct.bak");
+        let _ = std::fs::write(&backup, previous);
+    }
+    std::fs::write(&path, doc.to_string())
+        .with_context(|| format!("no se pudo escribir {}", path.display()))?;
+    Ok((true, path.display().to_string()))
+}
+
+/// Instala o actualiza el widget de Noctalia y lo deja habilitado.
+pub fn install_widget() -> Result<WidgetReport> {
+    let dir = env::data_home()
+        .join("noctalia")
+        .join("plugins")
+        .join("effects");
+    std::fs::create_dir_all(&dir).with_context(|| format!("no se pudo crear {}", dir.display()))?;
+
+    let files = [
+        ("plugin.toml", PLUGIN_TOML),
+        ("shortcut.luau", PLUGIN_SHORTCUT),
+        ("panel.luau", PLUGIN_PANEL),
+    ];
+    let mut written = Vec::new();
+    for (name, content) in files {
+        let path = dir.join(name);
+        write_if_changed(&path, content)?;
+        written.push(path.display().to_string());
+    }
+
+    let state_file = env::config_home().join("noctalia").join("plugins.json");
+    let mut enabled = false;
+    if let Some(parent) = state_file.parent() {
+        std::fs::create_dir_all(parent)
+            .with_context(|| format!("no se pudo crear {}", parent.display()))?;
+    }
+    let mut root: serde_json::Value = std::fs::read_to_string(&state_file)
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_else(|| serde_json::json!({"sources": [], "states": {}, "version": 2}));
+
+    let states = root
+        .as_object_mut()
+        .context("plugins.json no es un objeto")?
+        .entry("states")
+        .or_insert_with(|| serde_json::json!({}));
+    let states = states
+        .as_object_mut()
+        .context("plugins.json: states no es un objeto")?;
+    let entry = states
+        .entry("noct/effects")
+        .or_insert_with(|| serde_json::json!({}));
+    if let Some(entry) = entry.as_object_mut() {
+        entry.insert("enabled".into(), serde_json::Value::Bool(true));
+        enabled = true;
+    }
+
+    let rendered = serde_json::to_string_pretty(&root)?;
+    let previous = std::fs::read_to_string(&state_file).ok();
+    if previous.as_deref() != Some(rendered.as_str()) {
+        if let Some(previous) = &previous {
+            let backup = state_file.with_extension("json.noct.bak");
+            let _ = std::fs::write(&backup, previous);
+        }
+        std::fs::write(&state_file, &rendered)
+            .with_context(|| format!("no se pudo escribir {}", state_file.display()))?;
+    }
+
+    let (shortcut_added, settings_file) = ensure_control_center_shortcut()?;
+    if shortcut_added {
+        let _ = env::run("noctalia", &["msg", "config-reload"]);
+    }
+
+    let noct_in_path = env::capture("sh", &["-c", "command -v noct"])
+        .map(|value| !value.is_empty())
+        .unwrap_or(false);
+
+    Ok(WidgetReport {
+        plugin_dir: dir.display().to_string(),
+        files: written,
+        enabled,
+        state_file: state_file.display().to_string(),
+        settings_file,
+        shortcut_added,
+        noct_in_path,
+    })
 }

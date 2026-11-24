@@ -72,6 +72,21 @@ enum EffectsCmd {
         #[arg(long)]
         json: bool,
     },
+    /// Cambia el tinte del preset Mono (#RRGGBB o none)
+    Tint {
+        /// Color en hex, o "none" para gris puro
+        color: String,
+        /// Muestra el shader generado sin escribir nada
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Instala el widget de Noctalia para elegir efectos y tinte
+    Widget {
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -1097,12 +1112,69 @@ fn cmd_effects(cmd: EffectsCmd) -> Result<ExitCode> {
                 if let Some(preset) = &current.preset {
                     println!("Preset: {preset}");
                 }
+                if let Some(tint) = &current.tint {
+                    println!("  tinte: {tint}");
+                } else if current.preset.as_deref() == Some("mono") {
+                    println!("  tinte: gris puro");
+                }
                 if !current.effects.is_empty() {
                     println!("  efectos: {}", current.effects.join(", "));
                 }
                 if !current.animations.is_empty() {
                     println!("  animaciones: {}", current.animations.join(", "));
                 }
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        EffectsCmd::Widget { json } => {
+            let report = effects::install_widget()?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                println!("Widget instalado en {}", report.plugin_dir);
+                for file in &report.files {
+                    println!("  {file}");
+                }
+                println!("  estado: {}", report.state_file);
+                println!("  ajustes: {}", report.settings_file);
+                if report.shortcut_added {
+                    println!("  tile añadido al control center (máx. 6 atajos)");
+                }
+                if !report.noct_in_path {
+                    println!("! `noct` no está en PATH; el widget no podrá aplicar cambios.");
+                    println!(
+                        "  Instálalo con: cargo install --path crates/noct-cli --root ~/.local"
+                    );
+                }
+                println!(
+                    "
+Abre el panel con:"
+                );
+                println!("  noctalia msg panel-toggle noct/effects:panel");
+                println!("En el control center, añade el tile «Noct Effects» si no aparece solo.");
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        EffectsCmd::Tint {
+            color,
+            dry_run,
+            json,
+        } => {
+            let (report, shader) = effects::set_tint(&color, dry_run)?;
+            if dry_run {
+                println!("{shader}");
+            }
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else if !dry_run {
+                match &report.tint {
+                    Some(tint) => println!("Tinte: {tint}"),
+                    None => println!("Tinte: gris puro"),
+                }
+                if report.validated {
+                    println!("  validación: ok");
+                }
+                println!("  {}", report.message);
             }
             Ok(ExitCode::SUCCESS)
         }

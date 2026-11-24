@@ -1,4 +1,8 @@
 // Noct Mono: grayscale + scanlines + vignette over the whole output.
+// __NOCT_TINT__ se sustituye al aplicar el preset.
+const vec3 NOCT_TINT = vec3(__R__, __G__, __B__);
+const float NOCT_TINT_MIX = __MIX__;
+
 vec4 screen(vec2 uv) {
   vec4 c = umbriel_sample(uv);
 
@@ -17,5 +21,10 @@ vec4 screen(vec2 uv) {
   float falloff = smoothstep(0.32, 0.95, length(p) * 1.25);
   float dim = (1.0 - 0.55 * falloff) * line;
 
-  return vec4(vec3(mono) * dim, c.a);
+  // Tinte opcional: negro → color → blanco.
+  vec3 base = vec3(mono);
+  vec3 tinted = NOCT_TINT * mono;
+  vec3 color = mix(base, tinted, NOCT_TINT_MIX) * dim;
+
+  return vec4(color, c.a);
 }
