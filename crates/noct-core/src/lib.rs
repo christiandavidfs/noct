@@ -7,6 +7,8 @@ pub mod env;
 pub mod kdl;
 pub mod keys;
 pub mod profile;
+pub mod run;
+pub mod sync;
 pub mod theme;
 
 pub use doctor::{Check, Report, Severity, Summary};

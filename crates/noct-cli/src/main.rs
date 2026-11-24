@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
-use noct_core::{config, doctor, effects, env, keys, profile, theme};
+use noct_core::{config, doctor, effects, env, keys, profile, run, sync, theme};
 
 #[derive(Parser)]
 #[command(
@@ -47,6 +47,50 @@ enum Commands {
     Effects {
         #[command(subcommand)]
         cmd: EffectsCmd,
+    },
+    /// Sincroniza tema y wallpaper con el launcher Android
+    Sync {
+        #[command(subcommand)]
+        cmd: SyncCmd,
+    },
+    /// Ejecuta una app con fallback Qt/GL para Wayland
+    Run {
+        /// Fuerza xcb + GL software sin probar Wayland
+        #[arg(long)]
+        force_fallback: bool,
+        /// Muestra el comando y el entorno sin ejecutarlo
+        #[arg(long)]
+        dry_run: bool,
+        /// Comando y argumentos
+        #[arg(
+            trailing_var_arg = true,
+            allow_hyphen_values = true,
+            required = true,
+            num_args = 1..
+        )]
+        command: Vec<String>,
+    },
+}
+
+#[derive(Subcommand)]
+enum SyncCmd {
+    /// Arranca el servidor LAN de sincronización
+    Serve {
+        /// Puerto HTTP
+        #[arg(long, default_value_t = 8787)]
+        port: u16,
+        /// Interfaz de escucha
+        #[arg(long, default_value = "0.0.0.0")]
+        bind: String,
+        /// Token fijo (por defecto se genera uno aleatorio)
+        #[arg(long)]
+        token: Option<String>,
+        /// Tema exportado a servir (por defecto, el activo de Noctalia)
+        #[arg(long)]
+        theme: Option<PathBuf>,
+        /// Wallpaper a servir (por defecto, el del tema)
+        #[arg(long)]
+        wallpaper: Option<PathBuf>,
     },
 }
 
@@ -251,6 +295,21 @@ fn run() -> Result<ExitCode> {
         Commands::Keys { cmd } => cmd_keys(cmd),
         Commands::Bridge { cmd } => cmd_bridge(cmd),
         Commands::Effects { cmd } => cmd_effects(cmd),
+        Commands::Sync { cmd } => cmd_sync(cmd),
+        Commands::Run {
+            force_fallback,
+            dry_run,
+            command,
+        } => {
+            let code = run::run(
+                &command,
+                &run::RunOptions {
+                    force_fallback,
+                    dry_run,
+                },
+            )?;
+            Ok(ExitCode::from(code.clamp(0, 255) as u8))
+        }
     }
 }
 
@@ -1176,6 +1235,27 @@ Abre el panel con:"
                 }
                 println!("  {}", report.message);
             }
+            Ok(ExitCode::SUCCESS)
+        }
+    }
+}
+
+fn cmd_sync(cmd: SyncCmd) -> Result<ExitCode> {
+    match cmd {
+        SyncCmd::Serve {
+            port,
+            bind,
+            token,
+            theme,
+            wallpaper,
+        } => {
+            sync::serve(sync::ServeOptions {
+                port,
+                bind,
+                token,
+                theme,
+                wallpaper,
+            })?;
             Ok(ExitCode::SUCCESS)
         }
     }
