@@ -1,0 +1,5 @@
+# Noct Mono: salida completa en blanco y negro con scanlines y viñeta.
+# Se incluye desde el fragmento gestionado por Noct.
+[effects.preset.noct-mono]
+kind = "screen"
+shader = "shader.glsl"

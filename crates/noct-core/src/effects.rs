@@ -28,8 +28,48 @@ fn effect_roots() -> Vec<PathBuf> {
     ]
 }
 
+/// Efectos propios de Noct, escritos bajo la config del usuario.
+fn custom_root() -> PathBuf {
+    env::app_config("umbriel").join("noct").join("effects")
+}
+
+const CUSTOM_MONO_TOML: &str = include_str!("../assets/effects/screen/noct-mono/effect.toml");
+const CUSTOM_MONO_SHADER: &str = include_str!("../assets/effects/screen/noct-mono/shader.glsl");
+
+fn custom_asset(kind: &str, name: &str) -> Option<(&'static str, &'static str)> {
+    match (kind, name) {
+        ("screen", "noct-mono") => Some((CUSTOM_MONO_TOML, CUSTOM_MONO_SHADER)),
+        _ => None,
+    }
+}
+
+fn write_if_changed(path: &Path, content: &str) -> Result<()> {
+    if std::fs::read_to_string(path).ok().as_deref() == Some(content) {
+        return Ok(());
+    }
+    std::fs::write(path, content).with_context(|| format!("no se pudo escribir {}", path.display()))
+}
+
+/// Escribe los shaders propios de Noct antes de aplicarlos.
+fn ensure_custom_assets() -> Result<()> {
+    for (kind, name) in [("screen", "noct-mono")] {
+        let Some((effect, shader)) = custom_asset(kind, name) else {
+            continue;
+        };
+        let dir = custom_root().join(kind).join(name);
+        std::fs::create_dir_all(&dir)
+            .with_context(|| format!("no se pudo crear {}", dir.display()))?;
+        write_if_changed(&dir.join("effect.toml"), effect)?;
+        write_if_changed(&dir.join("shader.glsl"), shader)?;
+    }
+    Ok(())
+}
+
 /// Busca el `effect.toml` instalado para `<kind>/<name>`.
 fn find_effect(kind: &str, name: &str) -> Option<PathBuf> {
+    if custom_asset(kind, name).is_some() {
+        return Some(custom_root().join(kind).join(name).join("effect.toml"));
+    }
     for root in effect_roots() {
         let candidate = root.join(kind).join(name).join("effect.toml");
         if candidate.is_file() {
@@ -64,7 +104,11 @@ pub fn installed_effects() -> Vec<String> {
             }
         }
     }
+    if custom_asset("screen", "noct-mono").is_some() {
+        out.push("screen/noct-mono".to_string());
+    }
     out.sort();
+    out.dedup();
     out
 }
 
@@ -130,6 +174,16 @@ const PRESETS: &[Preset] = &[
         screen: None,
         window: None,
         animations: &[],
+    },
+    Preset {
+        id: "mono",
+        name: "Noct Mono",
+        description: "Todo el escritorio en blanco y negro, con scanlines y viñeta.",
+        border: None,
+        cursor: None,
+        screen: Some("noct-mono"),
+        window: None,
+        animations: &[("workspaces", "workspace_wipe")],
     },
     Preset {
         id: "off",
@@ -235,7 +289,8 @@ fn effect_includes(preset: &Preset) -> Result<Vec<String>> {
 }
 
 fn is_effect_include(value: &str) -> bool {
-    value.contains("/umbriel/effects/") && value.ends_with("/effect.toml")
+    value.ends_with("/effect.toml")
+        && (value.contains("/umbriel/effects/") || value.contains("/umbriel/noct/effects/"))
 }
 
 /// Reescribe el include de Umbriel: quita efectos antiguos y añade los nuevos.
@@ -345,6 +400,7 @@ pub fn apply(id: &str, dry_run: bool) -> Result<(ApplyReport, String)> {
         bail!("preset desconocido: {id}. Disponibles: {}", ids.join(", "));
     };
 
+    ensure_custom_assets()?;
     let includes = effect_includes(preset)?;
     let content = render_effects(preset.id, preset);
     let file = effects_file();
@@ -506,7 +562,8 @@ mod tests {
 
     #[test]
     fn known_presets_have_effects() {
-        assert_eq!(presets().len(), 5);
+        assert_eq!(presets().len(), 6);
         assert!(presets().iter().any(|p| p.id == "matrix"));
+        assert!(presets().iter().any(|p| p.id == "mono"));
     }
 }
