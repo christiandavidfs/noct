@@ -1252,6 +1252,8 @@ const PLUGIN_TOML: &str = include_str!("../assets/noctalia-plugin/plugin.toml");
 const PLUGIN_SHORTCUT: &str = include_str!("../assets/noctalia-plugin/shortcut.luau");
 const PLUGIN_PANEL: &str = include_str!("../assets/noctalia-plugin/panel.luau");
 const PLUGIN_MIX: &str = include_str!("../assets/noctalia-plugin/mix.luau");
+const PLUGIN_I18N_EN: &str = include_str!("../assets/noctalia-plugin/translations/en.json");
+const PLUGIN_I18N_ES: &str = include_str!("../assets/noctalia-plugin/translations/es.json");
 
 #[derive(Debug, Clone, Serialize)]
 pub struct WidgetReport {
@@ -1367,10 +1369,16 @@ pub fn install_widget() -> Result<WidgetReport> {
         ("shortcut.luau", PLUGIN_SHORTCUT),
         ("panel.luau", PLUGIN_PANEL),
         ("mix.luau", PLUGIN_MIX),
+        ("translations/en.json", PLUGIN_I18N_EN),
+        ("translations/es.json", PLUGIN_I18N_ES),
     ];
     let mut written = Vec::new();
     for (name, content) in files {
         let path = dir.join(name);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)
+                .with_context(|| format!("no se pudo crear {}", parent.display()))?;
+        }
         write_if_changed(&path, content)?;
         written.push(path.display().to_string());
     }

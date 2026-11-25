@@ -1,20 +1,28 @@
 --!nonstrict
--- Tile del control center: muestra el preset activo y abre el panel.
+-- Control-center tile: shows the active preset and opens the panel.
+
+local function tr(key)
+  local value = noctalia.tr(key)
+  if type(value) == "string" and value ~= "" then
+    return value
+  end
+  return key
+end
 
 local SHORT = {
-  neon = "Neon",
-  cinema = "Cine",
-  matrix = "Matrix",
-  mono = "Mono",
-  minimal = "Min",
-  custom = "Libre",
-  off = "Off",
+  neon = "shortcut.neon",
+  cinema = "shortcut.cinema",
+  matrix = "shortcut.matrix",
+  mono = "shortcut.mono",
+  minimal = "shortcut.minimal",
+  custom = "shortcut.custom",
+  off = "shortcut.off",
 }
 
 local current = noctalia.state.get("preset") or "mono"
 
 local function render()
-  shortcut.setLabel(SHORT[current] or current)
+  shortcut.setLabel(tr(SHORT[current]) or current)
   shortcut.setIcon("palette")
   shortcut.setActive(current ~= "off")
 end

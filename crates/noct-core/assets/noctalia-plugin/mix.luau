@@ -1,47 +1,60 @@
 --!nonstrict
--- Panel de mezcla: elige el efecto de cada slot sin cambiar de preset.
+-- Mix panel: choose the effect of each slot without changing the preset.
+
+local function tr(key, args)
+  local value = noctalia.tr(key, args)
+  if type(value) == "string" and value ~= "" then
+    return value
+  end
+  return key
+end
 
 local SLOTS = {
-  { key = "border",       label = "Borde",           tip = "Borde alrededor de la ventana enfocada." },
-  { key = "cursor",       label = "Cursor",          tip = "Efecto que sigue al puntero." },
-  { key = "screen",       label = "Pantalla",        tip = "Efecto aplicado a toda la salida." },
-  { key = "window",       label = "Ventana",         tip = "Efecto dibujado sobre cada ventana." },
-  { key = "windows_move", label = "Anim. ventanas",  tip = "Animación al mover o redimensionar ventanas." },
-  { key = "windows_in",   label = "Anim. apertura",  tip = "Animación al abrir ventanas." },
-  { key = "windows_out",  label = "Anim. cierre",    tip = "Animación al cerrar ventanas." },
-  { key = "workspaces",   label = "Anim. workspaces", tip = "Animación al cambiar de workspace." },
+  { key = "border",       label_key = "mix.slots.border.label",       tip_key = "mix.slots.border.tip" },
+  { key = "cursor",       label_key = "mix.slots.cursor.label",       tip_key = "mix.slots.cursor.tip" },
+  { key = "screen",       label_key = "mix.slots.screen.label",       tip_key = "mix.slots.screen.tip" },
+  { key = "window",       label_key = "mix.slots.window.label",       tip_key = "mix.slots.window.tip" },
+  { key = "windows_move", label_key = "mix.slots.windows_move.label", tip_key = "mix.slots.windows_move.tip" },
+  { key = "windows_in",   label_key = "mix.slots.windows_in.label",   tip_key = "mix.slots.windows_in.tip" },
+  { key = "windows_out",  label_key = "mix.slots.windows_out.label",  tip_key = "mix.slots.windows_out.tip" },
+  { key = "workspaces",   label_key = "mix.slots.workspaces.label",   tip_key = "mix.slots.workspaces.tip" },
 }
 
 local EFFECT_TIPS = {
   border = {
-    pulse = "Late alrededor de la ventana enfocada.",
-    audio = "Cambia de brillo con el audio del sistema.",
+    pulse = "mix.effects.border.pulse",
+    audio = "mix.effects.border.audio",
   },
   cursor = {
-    glow = "Halo suave que respira alrededor del puntero.",
-    trail = "Estela corta que sigue al puntero y se desvanece en ~300 ms.",
-    ["trail-path"] = "Rastro largo de ~2 s por el recorrido del puntero.",
+    glow = "mix.effects.cursor.glow",
+    trail = "mix.effects.cursor.trail",
+    ["trail-path"] = "mix.effects.cursor.trail-path",
   },
   screen = {
-    vignette = "Oscurece las esquinas de la pantalla.",
-    ["noct-mono"] = "Gris con scanlines y viñeta. Aquí aplican tinte e intensidad.",
+    vignette = "mix.effects.screen.vignette",
+    ["noct-mono"] = "mix.effects.screen.noct-mono",
   },
   window = {
-    scanlines = "Líneas horizontales sutiles sobre cada ventana.",
+    scanlines = "mix.effects.window.scanlines",
   },
   windows_in = {
-    reveal = "La ventana entra desde un lado.",
+    reveal = "mix.effects.windows_in.reveal",
   },
   windows_out = {
-    reveal = "La ventana sale hacia un lado.",
+    reveal = "mix.effects.windows_out.reveal",
   },
   windows_move = {
-    squash = "Rebote suave al mover o redimensionar ventanas.",
+    squash = "mix.effects.windows_move.squash",
   },
   workspaces = {
-    workspace_wipe = "Barrido al cambiar de workspace.",
+    workspace_wipe = "mix.effects.workspaces.workspace_wipe",
   },
 }
+
+local SLOT_LABELS = {}
+for _, slot in ipairs(SLOTS) do
+  SLOT_LABELS[slot.key] = slot.label_key
+end
 
 local preset = ""
 local overrides = {}
@@ -53,6 +66,10 @@ local busy = false
 local render
 local run
 local refresh
+
+local function slotLabel(key)
+  return tr(SLOT_LABELS[key] or key)
+end
 
 local function optionList(key)
   local list = { "auto", "none" }
@@ -82,42 +99,54 @@ local function displayValue(key)
   if value == "auto" then
     local active = effective[key]
     if type(active) == "string" and active ~= "" then
-      return "Auto · " .. active
+      return tr("mix.auto_active", { active = active })
     end
-    return "Auto"
+    return tr("mix.auto")
   elseif value == "none" then
-    return "Off"
+    return tr("mix.off")
+  end
+  return value
+end
+
+local function labelForValue(value)
+  if value == "auto" then
+    return tr("mix.auto")
+  elseif value == "none" then
+    return tr("mix.off")
   end
   return value
 end
 
 local function describe(key, value)
-  local tip = EFFECT_TIPS[key] and EFFECT_TIPS[key][value]
-  return tip or ("Efecto " .. value .. ".")
+  local tip_key = EFFECT_TIPS[key] and EFFECT_TIPS[key][value]
+  if tip_key ~= nil then
+    return tr(tip_key)
+  end
+  return value
 end
 
 local function valueTooltip(key, value)
   if value == "auto" then
     local active = effective[key]
     if type(active) == "string" and active ~= "" then
-      return "Ahora usa " .. active .. ": " .. describe(key, active) .. " Toca para cambiar."
+      return tr("mix.value_tip_auto_active", { active = active, desc = describe(key, active) })
     end
-    return "Usa el efecto del preset. Toca para cambiar."
+    return tr("mix.value_tip_auto")
   elseif value == "none" then
-    return "Desactiva este slot. Toca para cambiar."
+    return tr("mix.value_tip_off")
   end
-  return value .. ": " .. describe(key, value) .. " Toca para cambiar."
+  return tr("mix.value_tip", { name = value, desc = describe(key, value) })
 end
 
 local function slotTooltip(slot)
-  local parts = { slot.tip or ("Efecto de " .. slot.key) }
+  local parts = { tr(slot.tip_key) }
   local options = choices[slot.key]
   if type(options) == "table" then
     for _, name in ipairs(options) do
       parts[#parts + 1] = name .. ": " .. describe(slot.key, name)
     end
   end
-  parts[#parts + 1] = "Auto usa el preset; Off desactiva el slot."
+  parts[#parts + 1] = tr("mix.auto_off_hint")
   return table.concat(parts, "  ·  ")
 end
 
@@ -126,7 +155,7 @@ local function setSlot(key, value)
     return
   end
   busy = true
-  status = "Aplicando " .. key .. " = " .. value .. "…"
+  status = tr("mix.applying", { slot = slotLabel(key), value = labelForValue(value) })
   render()
 
   local args
@@ -139,10 +168,14 @@ local function setSlot(key, value)
   run(args, function(ok, out)
     busy = false
     if ok then
-      status = value == "auto" and ("'" .. key .. "' vuelve al preset") or ("'" .. key .. "' = " .. value)
+      if value == "auto" then
+        status = tr("mix.slot_reset", { slot = slotLabel(key) })
+      else
+        status = tr("mix.slot_set", { slot = slotLabel(key), value = labelForValue(value) })
+      end
       refresh()
     else
-      status = "Error: " .. out
+      status = tr("mix.error", { message = out })
       render()
     end
   end)
@@ -167,15 +200,15 @@ local function clearAll()
     return
   end
   busy = true
-  status = "Limpiando mezcla…"
+  status = tr("mix.clearing")
   render()
   run({ "noct", "effects", "mix", "clear" }, function(ok, out)
     busy = false
     if ok then
-      status = "Mezcla limpiada"
+      status = tr("mix.cleared")
       refresh()
     else
-      status = "Error: " .. out
+      status = tr("mix.error", { message = out })
       render()
     end
   end)
@@ -202,18 +235,18 @@ function render()
   rows[#rows + 1] = ui.row({ align = "center", justify = "space_between" }, {
     ui.row({ gap = 8, align = "center" }, {
       ui.glyph({ name = "palette", size = 18, color = "primary" }),
-      ui.label({ text = "Mezclar efectos", fontSize = 16, fontWeight = "bold" }),
+      ui.label({ text = tr("mix.title"), fontSize = 16, fontWeight = "bold" }),
     }),
     ui.button({ glyph = "close", variant = "ghost", onClick = "closePanel" }),
   })
 
   rows[#rows + 1] = ui.label({
-    text = "Preset: " .. (preset ~= "" and preset or "ninguno"),
+    text = tr("mix.preset", { preset = preset ~= "" and preset or tr("mix.preset_none") }),
     fontSize = 12,
     color = "on_surface/0.65",
   })
   rows[#rows + 1] = ui.label({
-    text = "Toca el valor para ciclar: Auto → Off → efectos instalados.",
+    text = tr("mix.hint"),
     fontSize = 11,
     color = "on_surface/0.55",
     maxWidth = 340,
@@ -224,7 +257,7 @@ function render()
     local value = overrideValue(slot.key)
     rows[#rows + 1] = ui.row({ align = "center", justify = "space_between",
       tooltip = slotTooltip(slot) }, {
-      ui.label({ text = slot.label, fontSize = 13, fontWeight = "bold" }),
+      ui.label({ text = tr(slot.label_key), fontSize = 13, fontWeight = "bold" }),
       ui.button({
         text = displayValue(slot.key),
         variant = value == "auto" and "ghost" or "outline",
@@ -240,10 +273,10 @@ function render()
 
   rows[#rows + 1] = ui.separator({})
   rows[#rows + 1] = ui.button({
-    text = "Limpiar toda la mezcla",
+    text = tr("mix.clear"),
     variant = "outline",
     controlSize = "sm",
-    tooltip = "Quita todos los overrides y vuelve a la configuración de cada preset.",
+    tooltip = tr("mix.clear_tip"),
     enabled = not busy,
     onClick = function()
       clearAll()
@@ -276,7 +309,7 @@ function run(args, done)
     done(ok, out)
   end)
   if not started then
-    done(false, "no se pudo ejecutar noct")
+    done(false, "noct")
   end
 end
 

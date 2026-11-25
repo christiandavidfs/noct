@@ -1,0 +1,156 @@
+{
+  "panel": {
+    "title": "Noct Effects",
+    "subtitle": "Umbriel effects",
+    "applying": "Applying…",
+    "applied": "Preset applied: {preset}",
+    "applying_preset": "Applying {preset}…",
+    "mix_button": "Mix effects…",
+    "mix_button_count": "Mix effects ({count})…",
+    "mix_tip": "Choose the effect for each slot: border, cursor, screen, window and animations.",
+    "tint_title": "Mono tint",
+    "tint_pure": "pure gray",
+    "tint_pure_button": "Pure gray",
+    "tint_tip": "Tint only affects Mono. If Mono is not active, changing it enables Mono.",
+    "tint_applied": "Tint applied: {color}",
+    "tint_applying": "Applying tint {color}…",
+    "intensity_title": "Mono intensity",
+    "intensity_tip": "Intensity only affects Mono. If Mono is not active, moving it enables Mono.",
+    "intensity_applied": "Intensity applied: {value}%",
+    "intensity_applying": "Applying intensity {value}%…",
+    "mono_inactive": "Mono is not active · Screen = {screen}. Adjust tint or intensity to enable it.",
+    "error": "Error: {message}",
+    "presets": {
+      "neon": {
+        "name": "Neon",
+        "desc": "pulse + glow + vignette",
+        "tip": "Pulsing border, cursor glow, vignette and bouncy animations."
+      },
+      "cinema": {
+        "name": "Cinema",
+        "desc": "soft scanlines + trail",
+        "tip": "Screen vignette, window scanlines and a short cursor trail."
+      },
+      "matrix": {
+        "name": "Matrix",
+        "desc": "scanlines + pulse + vignette",
+        "tip": "Scanlines, pulsing border, long cursor path and workspace wipe."
+      },
+      "minimal": {
+        "name": "Minimal",
+        "desc": "just a live border",
+        "tip": "Only a live border around the focused window."
+      },
+      "custom": {
+        "name": "Free",
+        "desc": "only what you mix",
+        "tip": "Start with no effects and add only the ones you choose in Mix."
+      },
+      "mono": {
+        "name": "Mono",
+        "desc": "all gray or duotone",
+        "tip": "The whole desktop in gray with scanlines and vignette; tint and intensity apply here."
+      },
+      "off": {
+        "name": "Off",
+        "desc": "no effects",
+        "tip": "Disable all effects. The saved mix is kept."
+      }
+    }
+  },
+  "shortcut": {
+    "neon": "Neon",
+    "cinema": "Cinema",
+    "matrix": "Matrix",
+    "mono": "Mono",
+    "minimal": "Min",
+    "custom": "Free",
+    "off": "Off"
+  },
+  "mix": {
+    "title": "Mix effects",
+    "preset": "Preset: {preset}",
+    "preset_none": "none",
+    "hint": "Tap the value to cycle: Auto → Off → installed effects.",
+    "clear": "Clear entire mix",
+    "clear_tip": "Remove all overrides and return to each preset’s configuration.",
+    "clearing": "Clearing mix…",
+    "cleared": "Mix cleared",
+    "applying": "Applying {slot} = {value}…",
+    "slot_set": "{slot} = {value}",
+    "slot_reset": "{slot} returns to the preset",
+    "error": "Error: {message}",
+    "auto": "Auto",
+    "off": "Off",
+    "auto_active": "Auto · {active}",
+    "value_tip_auto_active": "Now using {active}: {desc} Tap to change.",
+    "value_tip_auto": "Uses the preset effect. Tap to change.",
+    "value_tip_off": "Disables this slot. Tap to change.",
+    "value_tip": "{name}: {desc} Tap to change.",
+    "auto_off_hint": "Auto uses the preset; Off disables the slot.",
+    "slots": {
+      "border": {
+        "label": "Border",
+        "tip": "Border around the focused window."
+      },
+      "cursor": {
+        "label": "Cursor",
+        "tip": "Effect that follows the pointer."
+      },
+      "screen": {
+        "label": "Screen",
+        "tip": "Effect applied to the whole output."
+      },
+      "window": {
+        "label": "Window",
+        "tip": "Effect drawn over each window."
+      },
+      "windows_move": {
+        "label": "Window anim.",
+        "tip": "Animation when moving or resizing windows."
+      },
+      "windows_in": {
+        "label": "Open anim.",
+        "tip": "Animation when opening windows."
+      },
+      "windows_out": {
+        "label": "Close anim.",
+        "tip": "Animation when closing windows."
+      },
+      "workspaces": {
+        "label": "Workspace anim.",
+        "tip": "Animation when switching workspaces."
+      }
+    },
+    "effects": {
+      "border": {
+        "pulse": "Pulses around the focused window.",
+        "audio": "Changes brightness with system audio."
+      },
+      "cursor": {
+        "glow": "Soft halo that breathes around the pointer.",
+        "trail": "Short trail that follows the pointer and fades in ~300 ms.",
+        "trail-path": "Long ~2 s path along the pointer’s movement."
+      },
+      "screen": {
+        "vignette": "Darkens the screen corners.",
+        "noct-mono": "Gray with scanlines and vignette. Tint and intensity apply here."
+      },
+      "window": {
+        "scanlines": "Subtle horizontal lines over each window."
+      },
+      "windows_in": {
+        "reveal": "The window enters from one side."
+      },
+      "windows_out": {
+        "reveal": "The window leaves to one side."
+      },
+      "windows_move": {
+        "squash": "Soft bounce when moving or resizing windows."
+      },
+      "workspaces": {
+        "workspace_wipe": "Wipe when switching workspaces."
+      }
+    }
+  }
+}

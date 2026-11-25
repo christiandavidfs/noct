@@ -1,0 +1,156 @@
+{
+  "panel": {
+    "title": "Noct Effects",
+    "subtitle": "Efectos de Umbriel",
+    "applying": "Aplicando…",
+    "applied": "Preset aplicado: {preset}",
+    "applying_preset": "Aplicando {preset}…",
+    "mix_button": "Mezclar efectos…",
+    "mix_button_count": "Mezclar efectos ({count})…",
+    "mix_tip": "Elige el efecto de cada slot: borde, cursor, pantalla, ventana y animaciones.",
+    "tint_title": "Tinte de Mono",
+    "tint_pure": "gris puro",
+    "tint_pure_button": "Gris puro",
+    "tint_tip": "El tinte solo afecta a Mono. Si Mono no está activo, cambiarlo lo activa.",
+    "tint_applied": "Tinte aplicado: {color}",
+    "tint_applying": "Aplicando tinte {color}…",
+    "intensity_title": "Intensidad de Mono",
+    "intensity_tip": "La intensidad solo afecta a Mono. Si Mono no está activo, moverla lo activa.",
+    "intensity_applied": "Intensidad aplicada: {value}%",
+    "intensity_applying": "Aplicando intensidad {value}%…",
+    "mono_inactive": "Mono no está activo · Pantalla = {screen}. Ajusta el tinte o la intensidad para activarlo.",
+    "error": "Error: {message}",
+    "presets": {
+      "neon": {
+        "name": "Neon",
+        "desc": "pulse + glow + viñeta",
+        "tip": "Borde pulsante, halo de cursor, viñeta y animaciones con rebote."
+      },
+      "cinema": {
+        "name": "Cinema",
+        "desc": "scanlines suaves + estela",
+        "tip": "Viñeta de pantalla, scanlines por ventana y estela corta de cursor."
+      },
+      "matrix": {
+        "name": "Matrix",
+        "desc": "scanlines + pulse + viñeta",
+        "tip": "Scanlines, borde pulsante, rastro largo de cursor y barrido de workspaces."
+      },
+      "minimal": {
+        "name": "Minimal",
+        "desc": "solo borde vivo",
+        "tip": "Solo un borde vivo alrededor de la ventana enfocada."
+      },
+      "custom": {
+        "name": "Libre",
+        "desc": "solo lo que mezcles",
+        "tip": "Empieza sin efectos y añade solo los que elijas en Mezclar."
+      },
+      "mono": {
+        "name": "Mono",
+        "desc": "todo gris o duotono",
+        "tip": "Todo el escritorio en gris con scanlines y viñeta; aquí aplican tinte e intensidad."
+      },
+      "off": {
+        "name": "Off",
+        "desc": "sin efectos",
+        "tip": "Desactiva todos los efectos. La mezcla guardada se conserva."
+      }
+    }
+  },
+  "shortcut": {
+    "neon": "Neon",
+    "cinema": "Cine",
+    "matrix": "Matrix",
+    "mono": "Mono",
+    "minimal": "Min",
+    "custom": "Libre",
+    "off": "Off"
+  },
+  "mix": {
+    "title": "Mezclar efectos",
+    "preset": "Preset: {preset}",
+    "preset_none": "ninguno",
+    "hint": "Toca el valor para ciclar: Auto → Off → efectos instalados.",
+    "clear": "Limpiar toda la mezcla",
+    "clear_tip": "Quita todos los overrides y vuelve a la configuración de cada preset.",
+    "clearing": "Limpiando mezcla…",
+    "cleared": "Mezcla limpiada",
+    "applying": "Aplicando {slot} = {value}…",
+    "slot_set": "{slot} = {value}",
+    "slot_reset": "{slot} vuelve al preset",
+    "error": "Error: {message}",
+    "auto": "Auto",
+    "off": "Off",
+    "auto_active": "Auto · {active}",
+    "value_tip_auto_active": "Ahora usa {active}: {desc} Toca para cambiar.",
+    "value_tip_auto": "Usa el efecto del preset. Toca para cambiar.",
+    "value_tip_off": "Desactiva este slot. Toca para cambiar.",
+    "value_tip": "{name}: {desc} Toca para cambiar.",
+    "auto_off_hint": "Auto usa el preset; Off desactiva el slot.",
+    "slots": {
+      "border": {
+        "label": "Borde",
+        "tip": "Borde alrededor de la ventana enfocada."
+      },
+      "cursor": {
+        "label": "Cursor",
+        "tip": "Efecto que sigue al puntero."
+      },
+      "screen": {
+        "label": "Pantalla",
+        "tip": "Efecto aplicado a toda la salida."
+      },
+      "window": {
+        "label": "Ventana",
+        "tip": "Efecto dibujado sobre cada ventana."
+      },
+      "windows_move": {
+        "label": "Anim. ventanas",
+        "tip": "Animación al mover o redimensionar ventanas."
+      },
+      "windows_in": {
+        "label": "Anim. apertura",
+        "tip": "Animación al abrir ventanas."
+      },
+      "windows_out": {
+        "label": "Anim. cierre",
+        "tip": "Animación al cerrar ventanas."
+      },
+      "workspaces": {
+        "label": "Anim. workspaces",
+        "tip": "Animación al cambiar de workspace."
+      }
+    },
+    "effects": {
+      "border": {
+        "pulse": "Late alrededor de la ventana enfocada.",
+        "audio": "Cambia de brillo con el audio del sistema."
+      },
+      "cursor": {
+        "glow": "Halo suave que respira alrededor del puntero.",
+        "trail": "Estela corta que sigue al puntero y se desvanece en ~300 ms.",
+        "trail-path": "Rastro largo de ~2 s por el recorrido del puntero."
+      },
+      "screen": {
+        "vignette": "Oscurece las esquinas de la pantalla.",
+        "noct-mono": "Gris con scanlines y viñeta. Aquí aplican tinte e intensidad."
+      },
+      "window": {
+        "scanlines": "Líneas horizontales sutiles sobre cada ventana."
+      },
+      "windows_in": {
+        "reveal": "La ventana entra desde un lado."
+      },
+      "windows_out": {
+        "reveal": "La ventana sale hacia un lado."
+      },
+      "windows_move": {
+        "squash": "Rebote suave al mover o redimensionar ventanas."
+      },
+      "workspaces": {
+        "workspace_wipe": "Barrido al cambiar de workspace."
+      }
+    }
+  }
+}
