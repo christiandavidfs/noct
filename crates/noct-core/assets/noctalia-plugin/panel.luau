@@ -65,8 +65,13 @@ local function render()
     })
   end
 
+  local mixLabel = "Mezclar efectos…"
+  if countKeys(overrides) > 0 then
+    mixLabel = "Mezclar efectos (" .. countKeys(overrides) .. ")…"
+  end
+
   rows[#rows + 1] = ui.button({
-    text = "Mezclar efectos…",
+    text = mixLabel,
     variant = "outline",
     controlSize = "sm",
     enabled = not busy,
@@ -75,14 +80,6 @@ local function render()
       noctalia.togglePanel("noct/effects:mix")
     end,
   })
-
-  if countKeys(overrides) > 0 then
-    rows[#rows + 1] = ui.label({
-      text = "Mezcla guardada: " .. countKeys(overrides) .. " ajuste(s)",
-      fontSize = 11,
-      color = "on_surface/0.6",
-    })
-  end
 
   rows[#rows + 1] = ui.separator({})
 

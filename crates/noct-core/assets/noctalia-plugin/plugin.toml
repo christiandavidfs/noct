@@ -17,7 +17,7 @@ id = "panel"
 entry = "panel.luau"
 width = 390
 height = "content"
-max_height = 780
+max_height = 920
 placement = "floating"
 position = "center"
 
