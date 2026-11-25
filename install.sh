@@ -627,6 +627,29 @@ install_noct() {
   esac
 }
 
+has_bind() {
+  local chord="$1"
+  grep -q "\"$chord\"[[:space:]]*=" "$HOME/.config/umbriel/config.toml" \
+    "$HOME/.config/umbriel/noct/keybinds.toml" 2>/dev/null
+}
+
+configure_screenshot_keys() {
+  local chord action pair
+  for pair in \
+    "Print|spawn noctalia msg screenshot-region" \
+    "Shift+Print|spawn noctalia msg screenshot-window" \
+    "Ctrl+Print|spawn noctalia msg screenshot-fullscreen" \
+    "Alt+Print|spawn noctalia msg screenshot-annotate"; do
+    chord="${pair%%|*}"
+    action="${pair#*|}"
+    if has_bind "$chord"; then
+      log "Atajo $chord ya existe; se conserva"
+    else
+      run "$NOCT_BIN" keys set "$chord" "$action" || warn "no se pudo añadir $chord"
+    fi
+  done
+}
+
 configure_noct() {
   log "Configuración de Noct"
   ensure_umbriel_config
@@ -635,6 +658,7 @@ configure_noct() {
     run "$NOCT_BIN" effects apply mono || true
   fi
   run "$NOCT_BIN" effects widget || true
+  configure_screenshot_keys
   install_theme_watcher
   migrate_umbriel_syntax
   configure_wallpaper
