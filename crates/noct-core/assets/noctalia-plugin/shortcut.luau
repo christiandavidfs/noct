@@ -7,6 +7,7 @@ local SHORT = {
   matrix = "Matrix",
   mono = "Mono",
   minimal = "Min",
+  custom = "Libre",
   off = "Off",
 }
 

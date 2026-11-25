@@ -1,11 +1,11 @@
 id = "noct/effects"
 name = "Noct Effects"
-version = "1.0.0"
+version = "1.1.0"
 plugin_api = 50
 author = "noct"
 license = "MIT"
 icon = "palette"
-description = "Elige presets visuales y el tinte del escritorio."
+description = "Elige presets, mezcla efectos por slot y ajusta el tinte del escritorio."
 tags = ["theming", "utility", "umbriel", "effects"]
 
 [[shortcut]]
@@ -15,6 +15,15 @@ entry = "shortcut.luau"
 [[panel]]
 id = "panel"
 entry = "panel.luau"
+width = 390
+height = "content"
+max_height = 780
+placement = "floating"
+position = "center"
+
+[[panel]]
+id = "mix"
+entry = "mix.luau"
 width = 390
 height = "content"
 max_height = 780

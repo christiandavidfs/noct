@@ -103,7 +103,7 @@ enum EffectsCmd {
     },
     /// Aplica un preset visual
     Apply {
-        /// Identificador del preset (neon, cinema, matrix, minimal, off)
+        /// Identificador del preset (neon, cinema, matrix, minimal, mono, custom, off)
         preset: String,
         /// Muestra el fragmento sin escribir nada
         #[arg(long)]
@@ -136,8 +136,44 @@ enum EffectsCmd {
         #[arg(long)]
         json: bool,
     },
+    /// Mezcla efectos por slot sobre el preset activo
+    Mix {
+        #[command(subcommand)]
+        cmd: MixCmd,
+    },
     /// Instala el widget de Noctalia para elegir efectos y tinte
     Widget {
+        #[arg(long)]
+        json: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum MixCmd {
+    /// Muestra los overrides activos y las opciones instaladas
+    Show {
+        #[arg(long)]
+        json: bool,
+    },
+    /// Cambia un slot (border, cursor, screen, window, windows_move...)
+    Set {
+        /// Slot a cambiar
+        slot: String,
+        /// Efecto instalado, o "off"/"none" para desactivarlo
+        value: String,
+        /// Muestra el resultado sin escribir nada
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Quita un override (sin slot, quita todos)
+    Clear {
+        /// Slot a limpiar; omite para limpiar toda la mezcla
+        slot: Option<String>,
+        /// Muestra el resultado sin escribir nada
+        #[arg(long)]
+        dry_run: bool,
         #[arg(long)]
         json: bool,
     },
@@ -1189,6 +1225,14 @@ fn cmd_effects(cmd: EffectsCmd) -> Result<ExitCode> {
                 if current.preset.as_deref() == Some("mono") {
                     println!("  intensidad: {}%", current.intensity);
                 }
+                if !current.overrides.is_empty() {
+                    let parts: Vec<String> = current
+                        .overrides
+                        .iter()
+                        .map(|(slot, value)| format!("{slot}={value}"))
+                        .collect();
+                    println!("  mezcla: {}", parts.join(", "));
+                }
                 if !current.effects.is_empty() {
                     println!("  efectos: {}", current.effects.join(", "));
                 }
@@ -1270,6 +1314,101 @@ Abre el panel con:"
             }
             Ok(ExitCode::SUCCESS)
         }
+        EffectsCmd::Mix { cmd } => match cmd {
+            MixCmd::Show { json } => {
+                let show = effects::mix_show()?;
+                if json {
+                    println!("{}", serde_json::to_string_pretty(&show)?);
+                    return Ok(ExitCode::SUCCESS);
+                }
+                println!("Preset: {}", show.preset.as_deref().unwrap_or("ninguno"));
+                if show.overrides.is_empty() {
+                    println!("Mezcla: sin overrides (cada preset usa su configuración)");
+                } else {
+                    println!("Mezcla:");
+                    for (slot, value) in &show.overrides {
+                        println!("  {slot} = {value}");
+                    }
+                }
+                println!("\nEfectivo:");
+                for slot in effects::EFFECT_SLOTS
+                    .iter()
+                    .chain(effects::ANIMATION_SLOTS.iter())
+                {
+                    let value = show
+                        .effective
+                        .get(*slot)
+                        .and_then(|value| value.as_deref())
+                        .unwrap_or("off");
+                    println!("  {slot:<13} {value}");
+                }
+                println!("\nOpciones instaladas:");
+                for (slot, choices) in &show.choices {
+                    let list = if choices.is_empty() {
+                        "ninguna".to_string()
+                    } else {
+                        choices.join(", ")
+                    };
+                    println!("  {slot:<13} {list}");
+                }
+                Ok(ExitCode::SUCCESS)
+            }
+            MixCmd::Set {
+                slot,
+                value,
+                dry_run,
+                json,
+            } => {
+                let (report, content) = effects::set_override(&slot, &value, dry_run)?;
+                if dry_run {
+                    println!("{content}");
+                }
+                if json {
+                    println!("{}", serde_json::to_string_pretty(&report)?);
+                } else if !dry_run {
+                    println!(
+                        "Mezcla: {} = {} (preset {})",
+                        report.slot.as_deref().unwrap_or("?"),
+                        report.value.as_deref().unwrap_or("?"),
+                        report.preset
+                    );
+                    if !report.effects.is_empty() {
+                        println!("  efectos: {}", report.effects.join(", "));
+                    }
+                    if !report.animations.is_empty() {
+                        println!("  animaciones: {}", report.animations.join(", "));
+                    }
+                    if report.validated {
+                        println!("  validación: ok");
+                    }
+                    println!("  {}", report.message);
+                }
+                Ok(ExitCode::SUCCESS)
+            }
+            MixCmd::Clear {
+                slot,
+                dry_run,
+                json,
+            } => {
+                let (report, content) = effects::clear_override(slot.as_deref(), dry_run)?;
+                if dry_run {
+                    println!("{content}");
+                }
+                if json {
+                    println!("{}", serde_json::to_string_pretty(&report)?);
+                } else if !dry_run {
+                    match report.slot.as_deref() {
+                        Some(slot) => println!("Mezcla: {slot} vuelve al preset {}", report.preset),
+                        None => println!("Mezcla limpiada (preset {})", report.preset),
+                    }
+                    if report.validated {
+                        println!("  validación: ok");
+                    }
+                    println!("  {}", report.message);
+                }
+                Ok(ExitCode::SUCCESS)
+            }
+        },
     }
 }
 

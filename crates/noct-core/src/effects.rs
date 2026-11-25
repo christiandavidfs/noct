@@ -5,10 +5,11 @@
 //! usuario. Al cambiar de preset se retiran solo las entradas de efectos, nunca
 //! el resto de la configuración.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use toml_edit::{Array, DocumentMut, Item, Value};
 
 use crate::env;
@@ -102,6 +103,108 @@ fn normalize_tint(color: &str) -> Result<Option<String>> {
     let (r, g, b) = parse_hex(&value)
         .with_context(|| format!("color inválido: {color} (usa #RRGGBB o none)"))?;
     Ok(Some(format!("#{r:02x}{g:02x}{b:02x}")))
+}
+
+/// Slots de efecto que se pueden mezclar sobre un preset.
+pub const EFFECT_SLOTS: &[&str] = &["border", "cursor", "screen", "window"];
+
+/// Slots de animación que se pueden mezclar sobre un preset.
+pub const ANIMATION_SLOTS: &[&str] = &["windows_in", "windows_move", "windows_out", "workspaces"];
+
+fn overrides_path() -> PathBuf {
+    env::app_config("umbriel")
+        .join("noct")
+        .join("overrides.toml")
+}
+
+/// Overrides por slot: cada clave sustituye el valor del preset.
+/// El valor `none` desactiva ese slot; si falta, se usa el preset.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Overrides {
+    #[serde(flatten)]
+    pub values: BTreeMap<String, String>,
+}
+
+impl Overrides {
+    fn get(&self, slot: &str) -> Option<&str> {
+        self.values.get(slot).map(String::as_str)
+    }
+
+    fn set(&mut self, slot: &str, value: &str) {
+        self.values.insert(slot.to_string(), value.to_string());
+    }
+
+    fn clear(&mut self, slot: &str) {
+        self.values.remove(slot);
+    }
+}
+
+/// Carga los overrides; un archivo ausente o inválido equivale a ninguno.
+pub fn load_overrides() -> Overrides {
+    let path = overrides_path();
+    let Ok(text) = std::fs::read_to_string(&path) else {
+        return Overrides::default();
+    };
+    let mut overrides: Overrides = toml::from_str(&text).unwrap_or_default();
+    overrides.values.retain(|slot, value| {
+        if slot_kind(slot).is_none() {
+            return false;
+        }
+        let normalized = normalize_override_value(value);
+        if normalized.is_empty() {
+            return false;
+        }
+        *value = normalized;
+        true
+    });
+    overrides
+}
+
+fn save_overrides(overrides: &Overrides) -> Result<()> {
+    let path = overrides_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)
+            .with_context(|| format!("no se pudo crear {}", parent.display()))?;
+    }
+    let text = toml::to_string_pretty(overrides)
+        .with_context(|| format!("no se pudo serializar {}", path.display()))?;
+    std::fs::write(&path, text).with_context(|| format!("no se pudo escribir {}", path.display()))
+}
+
+fn normalize_override_value(value: &str) -> String {
+    let value = value.trim().to_ascii_lowercase();
+    match value.as_str() {
+        "" | "auto" | "preset" => String::new(),
+        "off" | "none" | "disabled" | "false" => "none".to_string(),
+        _ => value,
+    }
+}
+
+fn slot_kind(slot: &str) -> Option<&'static str> {
+    match slot {
+        "border" => Some("border"),
+        "cursor" => Some("cursor"),
+        "screen" => Some("screen"),
+        "window" => Some("window"),
+        "windows_in" | "windows_move" | "windows_out" | "workspaces" => Some("animation"),
+        _ => None,
+    }
+}
+
+fn all_slots() -> Vec<&'static str> {
+    EFFECT_SLOTS
+        .iter()
+        .chain(ANIMATION_SLOTS.iter())
+        .copied()
+        .collect()
+}
+
+fn installed_names(kind: &str) -> Vec<String> {
+    let prefix = format!("{kind}/");
+    installed_effects()
+        .into_iter()
+        .filter_map(|entry| entry.strip_prefix(&prefix).map(str::to_string))
+        .collect()
 }
 
 fn render_mono_shader(tint: Option<&str>, intensity: u8) -> String {
@@ -272,6 +375,16 @@ const PRESETS: &[Preset] = &[
         animations: &[("workspaces", "workspace_wipe")],
     },
     Preset {
+        id: "custom",
+        name: "Noct Libre",
+        description: "Empieza sin efectos y mezcla solo los que elijas.",
+        border: None,
+        cursor: None,
+        screen: None,
+        window: None,
+        animations: &[],
+    },
+    Preset {
         id: "off",
         name: "Sin efectos",
         description: "Desactiva los efectos y retira sus includes.",
@@ -300,6 +413,54 @@ fn preset_effects(preset: &Preset) -> Vec<(&'static str, &'static str)> {
     }
     if let Some(name) = preset.window {
         out.push(("window", name));
+    }
+    out
+}
+
+/// Aplica los overrides de slot sobre los efectos del preset.
+fn effective_effects<'a>(preset: &'a Preset, overrides: &'a Overrides) -> Vec<(&'a str, &'a str)> {
+    let mut out: Vec<(&str, &str)> = Vec::new();
+    for (kind, name) in preset_effects(preset) {
+        let value = overrides.get(kind).unwrap_or(name);
+        if value != "none" {
+            out.push((kind, value));
+        }
+    }
+    // Un override puede añadir un efecto que el preset no tenía (p. ej. cursor en minimal).
+    for slot in EFFECT_SLOTS {
+        if out.iter().any(|(kind, _)| kind == slot) {
+            continue;
+        }
+        if let Some(value) = overrides.get(slot) {
+            if value != "none" {
+                out.push((slot, value));
+            }
+        }
+    }
+    out
+}
+
+/// Aplica los overrides de animación sobre las animaciones del preset.
+fn effective_animations<'a>(
+    preset: &'a Preset,
+    overrides: &'a Overrides,
+) -> Vec<(&'a str, &'a str)> {
+    let mut out: Vec<(&str, &str)> = Vec::new();
+    for (group, name) in preset.animations {
+        let value = overrides.get(group).unwrap_or(name);
+        if value != "none" {
+            out.push((group, value));
+        }
+    }
+    for slot in ANIMATION_SLOTS {
+        if out.iter().any(|(group, _)| group == slot) {
+            continue;
+        }
+        if let Some(value) = overrides.get(slot) {
+            if value != "none" {
+                out.push((slot, value));
+            }
+        }
     }
     out
 }
@@ -339,38 +500,46 @@ pub fn presets() -> Vec<PresetInfo> {
         .collect()
 }
 
-fn render_effects(preset_id: &str, preset: &Preset) -> String {
+fn render_effects(
+    preset_id: &str,
+    effects: &[(&str, &str)],
+    animations: &[(&str, &str)],
+) -> String {
     let mut out = String::new();
     out.push_str("# Generado por Noct (noct effects). No editar a mano.\n");
     out.push_str(&format!("# preset: {preset_id}\n\n"));
-    let effects = preset_effects(preset);
     if !effects.is_empty() {
         out.push_str("[effects]\n");
         // Las capturas y grabaciones deben mostrar el mismo look que la pantalla.
         out.push_str("in_capture = true\n");
-        for (kind, name) in &effects {
+        for (kind, name) in effects {
             out.push_str(&format!("{kind} = \"{name}\"\n"));
         }
         out.push('\n');
     }
-    for (group, name) in preset.animations {
+    for (group, name) in animations {
         out.push_str(&format!("[animation.{group}]\n"));
         out.push_str(&format!("effect = \"{name}\"\n\n"));
     }
     out
 }
 
-fn effect_includes(preset: &Preset) -> Result<Vec<String>> {
+fn effect_includes(effects: &[(&str, &str)], animations: &[(&str, &str)]) -> Result<Vec<String>> {
     let mut out = Vec::new();
-    for (kind, name) in preset_effects(preset) {
+    for (kind, name) in effects {
         let path = find_effect(kind, name).with_context(|| {
-            format!("no está instalado el efecto {kind}/{name} (mira `noct effects list`)")
+            format!(
+                "no está instalado el efecto {kind}/{name} (mira `noct effects list` o limpia la mezcla con `noct effects mix clear`)"
+            )
         })?;
         out.push(path.display().to_string());
     }
-    for (_, name) in preset.animations {
-        let path = find_effect("animation", name)
-            .with_context(|| format!("no está instalada la animación {name}"))?;
+    for (_, name) in animations {
+        let path = find_effect("animation", name).with_context(|| {
+            format!(
+                "no está instalada la animación {name} (mira `noct effects list` o limpia la mezcla con `noct effects mix clear`)"
+            )
+        })?;
         out.push(path.display().to_string());
     }
     Ok(out)
@@ -481,27 +650,44 @@ fn validate_umbriel() -> Result<()> {
     }
 }
 
-/// Aplica un preset. Con `dry_run` solo devuelve el fragmento generado.
+/// Aplica un preset con los overrides activos. Con `dry_run` solo devuelve el fragmento.
 pub fn apply(id: &str, dry_run: bool) -> Result<(ApplyReport, String)> {
+    let overrides = load_overrides();
+    apply_with_overrides(id, &overrides, dry_run)
+}
+
+fn apply_with_overrides(
+    id: &str,
+    overrides: &Overrides,
+    dry_run: bool,
+) -> Result<(ApplyReport, String)> {
     let Some(preset) = preset(id) else {
         let ids: Vec<&str> = PRESETS.iter().map(|p| p.id).collect();
         bail!("preset desconocido: {id}. Disponibles: {}", ids.join(", "));
     };
 
-    let includes = effect_includes(preset)?;
-    let content = render_effects(preset.id, preset);
+    // "off" apaga todo de verdad: no se mezcla con overrides.
+    let empty = Overrides::default();
+    let active = if preset.id == "off" {
+        &empty
+    } else {
+        overrides
+    };
+    let effects = effective_effects(preset, active);
+    let animations = effective_animations(preset, active);
+    let includes = effect_includes(&effects, &animations)?;
+    let content = render_effects(preset.id, &effects, &animations);
     let file = effects_file();
 
     let mut report = ApplyReport {
         preset: preset.id.to_string(),
         name: preset.name.to_string(),
         file: file.display().to_string(),
-        effects: preset_effects(preset)
-            .into_iter()
+        effects: effects
+            .iter()
             .map(|(kind, name)| format!("{kind}={name}"))
             .collect(),
-        animations: preset
-            .animations
+        animations: animations
             .iter()
             .map(|(group, name)| format!("{group}={name}"))
             .collect(),
@@ -549,6 +735,8 @@ pub fn apply(id: &str, dry_run: bool) -> Result<(ApplyReport, String)> {
     report.reloaded = reloaded;
     report.message = if preset.id == "off" {
         "efectos desactivados".to_string()
+    } else if preset.id == "custom" && effects.is_empty() && animations.is_empty() {
+        "sin efectos: elige qué mezclar".to_string()
     } else if reloaded {
         "preset aplicado y Umbriel recargado".to_string()
     } else {
@@ -567,6 +755,207 @@ fn restore(path: &Path, previous: Option<String>) {
             let _ = std::fs::remove_file(path);
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MixReport {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slot: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
+    pub preset: String,
+    pub overrides: BTreeMap<String, String>,
+    pub effects: Vec<String>,
+    pub animations: Vec<String>,
+    pub file: String,
+    pub written: bool,
+    pub validated: bool,
+    pub reloaded: bool,
+    pub message: String,
+}
+
+/// Preset base para una mezcla: el activo, o `custom` si estamos en off/nada.
+fn base_preset_for_mix() -> String {
+    match current().ok().and_then(|value| value.preset) {
+        Some(id) if id != "off" => id,
+        _ => "custom".to_string(),
+    }
+}
+
+fn check_override_value(slot: &str, value: &str) -> Result<()> {
+    if value == "none" {
+        return Ok(());
+    }
+    let kind = slot_kind(slot)
+        .with_context(|| format!("slot desconocido: {slot}. Usa: {}", all_slots().join(", ")))?;
+    let names = installed_names(kind);
+    if names.iter().any(|name| name == value) {
+        return Ok(());
+    }
+    let available = if names.is_empty() {
+        "ninguno".to_string()
+    } else {
+        names.join(", ")
+    };
+    bail!("no está instalado {kind}/{value}. Disponibles: {available}")
+}
+
+/// Cambia un slot de la mezcla y reaplica el preset activo.
+pub fn set_override(slot: &str, value: &str, dry_run: bool) -> Result<(MixReport, String)> {
+    let slot = slot.trim().to_ascii_lowercase();
+    let normalized = normalize_override_value(value);
+    if normalized.is_empty() {
+        return clear_override(Some(&slot), dry_run);
+    }
+    check_override_value(&slot, &normalized)?;
+
+    let mut overrides = load_overrides();
+    overrides.set(&slot, &normalized);
+    let preset_id = base_preset_for_mix();
+    let previous = std::fs::read_to_string(overrides_path()).ok();
+
+    if !dry_run {
+        save_overrides(&overrides)?;
+    }
+
+    let result = apply_with_overrides(&preset_id, &overrides, dry_run);
+    let (apply_report, content) = match result {
+        Ok(value) => value,
+        Err(err) => {
+            if !dry_run {
+                restore(&overrides_path(), previous);
+            }
+            return Err(err);
+        }
+    };
+
+    Ok((
+        MixReport {
+            slot: Some(slot),
+            value: Some(normalized),
+            preset: apply_report.preset,
+            overrides: overrides.values,
+            effects: apply_report.effects,
+            animations: apply_report.animations,
+            file: apply_report.file,
+            written: apply_report.written,
+            validated: apply_report.validated,
+            reloaded: apply_report.reloaded,
+            message: apply_report.message,
+        },
+        content,
+    ))
+}
+
+/// Quita un override (o todos) y reaplica el preset activo.
+pub fn clear_override(slot: Option<&str>, dry_run: bool) -> Result<(MixReport, String)> {
+    let mut overrides = load_overrides();
+    let slot = slot.map(|value| value.trim().to_ascii_lowercase());
+    if let Some(slot) = &slot {
+        if slot_kind(slot).is_none() {
+            bail!("slot desconocido: {slot}. Usa: {}", all_slots().join(", "));
+        }
+        overrides.clear(slot);
+    } else {
+        overrides.values.clear();
+    }
+
+    let mut preset_id = base_preset_for_mix();
+    // Si la mezcla queda vacía y estábamos en custom, apaga del todo.
+    if overrides.values.is_empty() && preset_id == "custom" {
+        preset_id = "off".to_string();
+    }
+
+    let previous = std::fs::read_to_string(overrides_path()).ok();
+    if !dry_run {
+        save_overrides(&overrides)?;
+    }
+
+    let result = apply_with_overrides(&preset_id, &overrides, dry_run);
+    let (apply_report, content) = match result {
+        Ok(value) => value,
+        Err(err) => {
+            if !dry_run {
+                restore(&overrides_path(), previous);
+            }
+            return Err(err);
+        }
+    };
+
+    Ok((
+        MixReport {
+            slot,
+            value: None,
+            preset: apply_report.preset,
+            overrides: overrides.values,
+            effects: apply_report.effects,
+            animations: apply_report.animations,
+            file: apply_report.file,
+            written: apply_report.written,
+            validated: apply_report.validated,
+            reloaded: apply_report.reloaded,
+            message: apply_report.message,
+        },
+        content,
+    ))
+}
+
+fn animation_choices(slot: &str, installed: &[String]) -> Vec<String> {
+    let wanted: &[&str] = match slot {
+        "windows_in" | "windows_out" => &["reveal"],
+        "windows_move" => &["squash"],
+        "workspaces" => &["workspace_wipe"],
+        _ => return installed.to_vec(),
+    };
+    installed
+        .iter()
+        .filter(|name| wanted.contains(&name.as_str()))
+        .cloned()
+        .collect()
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MixShow {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preset: Option<String>,
+    pub overrides: BTreeMap<String, String>,
+    pub effective: BTreeMap<String, Option<String>>,
+    pub choices: BTreeMap<String, Vec<String>>,
+}
+
+/// Estado de la mezcla: overrides, valores efectivos y opciones instaladas.
+pub fn mix_show() -> Result<MixShow> {
+    let current = current()?;
+    let mut effective = BTreeMap::new();
+    for slot in all_slots() {
+        effective.insert(slot.to_string(), None);
+    }
+    for entry in &current.effects {
+        if let Some((kind, name)) = entry.split_once('=') {
+            effective.insert(kind.to_string(), Some(name.to_string()));
+        }
+    }
+    for entry in &current.animations {
+        if let Some((group, name)) = entry.split_once('=') {
+            effective.insert(group.to_string(), Some(name.to_string()));
+        }
+    }
+
+    let mut choices = BTreeMap::new();
+    for slot in EFFECT_SLOTS {
+        choices.insert(slot.to_string(), installed_names(slot));
+    }
+    let animations = installed_names("animation");
+    for slot in ANIMATION_SLOTS {
+        choices.insert(slot.to_string(), animation_choices(slot, &animations));
+    }
+
+    Ok(MixShow {
+        preset: current.preset,
+        overrides: current.overrides,
+        effective,
+        choices,
+    })
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -691,6 +1080,7 @@ pub struct CurrentEffects {
     pub intensity: u8,
     pub effects: Vec<String>,
     pub animations: Vec<String>,
+    pub overrides: BTreeMap<String, String>,
 }
 
 /// Lee las selecciones activas del fragmento gestionado.
@@ -703,6 +1093,7 @@ pub fn current() -> Result<CurrentEffects> {
             intensity: current_intensity(),
             effects: Vec::new(),
             animations: Vec::new(),
+            overrides: load_overrides().values,
         });
     }
     let text = std::fs::read_to_string(&path)
@@ -741,6 +1132,7 @@ pub fn current() -> Result<CurrentEffects> {
         intensity: current_intensity(),
         effects,
         animations,
+        overrides: load_overrides().values,
     })
 }
 
@@ -751,7 +1143,8 @@ mod tests {
     #[test]
     fn renders_effects_and_animations() {
         let preset = preset("neon").unwrap();
-        let text = render_effects("neon", preset);
+        let effects = preset_effects(preset);
+        let text = render_effects("neon", &effects, preset.animations);
         let value: toml::Value = toml::from_str(&text).unwrap();
         assert_eq!(value["effects"]["border"].as_str(), Some("pulse"));
         assert_eq!(value["effects"]["cursor"].as_str(), Some("glow"));
@@ -763,17 +1156,48 @@ mod tests {
 
     #[test]
     fn off_renders_empty_document() {
-        let preset = preset("off").unwrap();
-        let text = render_effects("off", preset);
+        let text = render_effects("off", &[], &[]);
         let value: toml::Value = toml::from_str(&text).unwrap();
         assert!(value.get("effects").is_none());
     }
 
     #[test]
+    fn overrides_can_disable_replace_and_add_slots() {
+        let preset = preset("matrix").unwrap();
+        let mut overrides = Overrides::default();
+        overrides.set("cursor", "none");
+        overrides.set("screen", "noct-mono");
+        overrides.set("windows_move", "none");
+
+        let effects = effective_effects(preset, &overrides);
+        assert!(!effects.iter().any(|(kind, _)| *kind == "cursor"));
+        assert!(effects
+            .iter()
+            .any(|(kind, name)| *kind == "screen" && *name == "noct-mono"));
+
+        let animations = effective_animations(preset, &overrides);
+        assert!(!animations.iter().any(|(group, _)| *group == "windows_move"));
+    }
+
+    #[test]
+    fn overrides_can_add_cursor_to_minimal() {
+        let preset = preset("minimal").unwrap();
+        let mut overrides = Overrides::default();
+        overrides.set("cursor", "trail");
+
+        let effects = effective_effects(preset, &overrides);
+        assert!(effects
+            .iter()
+            .any(|(kind, name)| *kind == "cursor" && *name == "trail"));
+        assert!(effects.iter().any(|(kind, _)| *kind == "border"));
+    }
+
+    #[test]
     fn known_presets_have_effects() {
-        assert_eq!(presets().len(), 6);
+        assert_eq!(presets().len(), 7);
         assert!(presets().iter().any(|p| p.id == "matrix"));
         assert!(presets().iter().any(|p| p.id == "mono"));
+        assert!(presets().iter().any(|p| p.id == "custom"));
     }
 }
 
@@ -784,6 +1208,7 @@ mod tests {
 const PLUGIN_TOML: &str = include_str!("../assets/noctalia-plugin/plugin.toml");
 const PLUGIN_SHORTCUT: &str = include_str!("../assets/noctalia-plugin/shortcut.luau");
 const PLUGIN_PANEL: &str = include_str!("../assets/noctalia-plugin/panel.luau");
+const PLUGIN_MIX: &str = include_str!("../assets/noctalia-plugin/mix.luau");
 
 #[derive(Debug, Clone, Serialize)]
 pub struct WidgetReport {
@@ -898,6 +1323,7 @@ pub fn install_widget() -> Result<WidgetReport> {
         ("plugin.toml", PLUGIN_TOML),
         ("shortcut.luau", PLUGIN_SHORTCUT),
         ("panel.luau", PLUGIN_PANEL),
+        ("mix.luau", PLUGIN_MIX),
     ];
     let mut written = Vec::new();
     for (name, content) in files {

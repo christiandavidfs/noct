@@ -5,8 +5,9 @@ local PRESETS = {
   { id = "neon",    label = "Neon",    desc = "pulse + glow + viñeta" },
   { id = "cinema",  label = "Cinema",  desc = "scanlines suaves + estela" },
   { id = "matrix",  label = "Matrix",  desc = "scanlines + pulse + viñeta" },
-  { id = "mono",    label = "Mono",    desc = "todo gris o duotono" },
   { id = "minimal", label = "Minimal", desc = "solo borde vivo" },
+  { id = "custom",  label = "Libre",   desc = "solo lo que mezcles" },
+  { id = "mono",    label = "Mono",    desc = "todo gris o duotono" },
   { id = "off",     label = "Off",     desc = "sin efectos" },
 }
 
@@ -16,8 +17,19 @@ if tint == "" then
   tint = nil
 end
 local intensity = tonumber(noctalia.state.get("intensity")) or 100
+local overrides = {}
 local status = ""
 local busy = false
+
+local function countKeys(tableValue)
+  local count = 0
+  if type(tableValue) == "table" then
+    for _ in pairs(tableValue) do
+      count = count + 1
+    end
+  end
+  return count
+end
 
 local function render()
 
@@ -50,6 +62,25 @@ local function render()
       onClick = function()
         applyPreset(preset.id)
       end,
+    })
+  end
+
+  rows[#rows + 1] = ui.button({
+    text = "Mezclar efectos…",
+    variant = "outline",
+    controlSize = "sm",
+    enabled = not busy,
+    onClick = function()
+      panel.close()
+      noctalia.togglePanel("noct/effects:mix")
+    end,
+  })
+
+  if countKeys(overrides) > 0 then
+    rows[#rows + 1] = ui.label({
+      text = "Mezcla guardada: " .. countKeys(overrides) .. " ajuste(s)",
+      fontSize = 11,
+      color = "on_surface/0.6",
     })
   end
 
@@ -140,13 +171,16 @@ local function run(args, done)
   end
 end
 
-local function syncState(preset, color, level)
+local function syncState(preset, color, level, ov)
   if preset ~= nil then
     current = preset
   end
   tint = color
   if level ~= nil then
     intensity = math.floor(tonumber(level) or intensity)
+  end
+  if type(ov) == "table" then
+    overrides = ov
   end
   noctalia.state.set("preset", current)
   noctalia.state.set("tint", tint or "")
@@ -158,7 +192,7 @@ local function refresh()
     if ok then
       local decoded = noctalia.json.decode(out)
       if type(decoded) == "table" then
-        syncState(decoded.preset, decoded.tint, decoded.intensity)
+        syncState(decoded.preset, decoded.tint, decoded.intensity, decoded.overrides)
       end
     end
     render()
