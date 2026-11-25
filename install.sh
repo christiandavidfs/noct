@@ -587,12 +587,21 @@ def line(raw):
         return m.group(1) + action(m.group(2)) + m.group(3)
     return raw
 
+def commands(text):
+    # También los eventos y scripts: `umbriel msg output-enable:eDP-1`.
+    return re.sub(
+        r'(umbriel\s+msg\s+)([a-z][a-z0-9-]*):([^\s"\']+)',
+        lambda m: m.group(1) + m.group(2) + ' ' + m.group(3).replace(':', ' '),
+        text,
+    )
+
 stamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
 for path in files:
     if not path.exists():
         continue
     original = path.read_text()
     updated = ''.join(line(l.rstrip('\n')) + ('\n' if l.endswith('\n') else '') for l in original.splitlines(keepends=True))
+    updated = commands(updated)
     if updated != original:
         shutil.copy2(path, path.with_name(path.name + f'.pre-b56-{stamp}.bak'))
         path.write_text(updated)
