@@ -2,14 +2,45 @@
 -- Panel de mezcla: elige el efecto de cada slot sin cambiar de preset.
 
 local SLOTS = {
-  { key = "border",       label = "Borde" },
-  { key = "cursor",       label = "Cursor" },
-  { key = "screen",       label = "Pantalla" },
-  { key = "window",       label = "Ventana" },
-  { key = "windows_move", label = "Anim. ventanas" },
-  { key = "windows_in",   label = "Anim. apertura" },
-  { key = "windows_out",  label = "Anim. cierre" },
-  { key = "workspaces",   label = "Anim. workspaces" },
+  { key = "border",       label = "Borde",           tip = "Borde alrededor de la ventana enfocada." },
+  { key = "cursor",       label = "Cursor",          tip = "Efecto que sigue al puntero." },
+  { key = "screen",       label = "Pantalla",        tip = "Efecto aplicado a toda la salida." },
+  { key = "window",       label = "Ventana",         tip = "Efecto dibujado sobre cada ventana." },
+  { key = "windows_move", label = "Anim. ventanas",  tip = "Animación al mover o redimensionar ventanas." },
+  { key = "windows_in",   label = "Anim. apertura",  tip = "Animación al abrir ventanas." },
+  { key = "windows_out",  label = "Anim. cierre",    tip = "Animación al cerrar ventanas." },
+  { key = "workspaces",   label = "Anim. workspaces", tip = "Animación al cambiar de workspace." },
+}
+
+local EFFECT_TIPS = {
+  border = {
+    pulse = "Late alrededor de la ventana enfocada.",
+    audio = "Cambia de brillo con el audio del sistema.",
+  },
+  cursor = {
+    glow = "Halo suave que respira alrededor del puntero.",
+    trail = "Estela corta que sigue al puntero y se desvanece en ~300 ms.",
+    ["trail-path"] = "Rastro largo de ~2 s por el recorrido del puntero.",
+  },
+  screen = {
+    vignette = "Oscurece las esquinas de la pantalla.",
+    ["noct-mono"] = "Gris con scanlines y viñeta. Aquí aplican tinte e intensidad.",
+  },
+  window = {
+    scanlines = "Líneas horizontales sutiles sobre cada ventana.",
+  },
+  windows_in = {
+    reveal = "La ventana entra desde un lado.",
+  },
+  windows_out = {
+    reveal = "La ventana sale hacia un lado.",
+  },
+  windows_move = {
+    squash = "Rebote suave al mover o redimensionar ventanas.",
+  },
+  workspaces = {
+    workspace_wipe = "Barrido al cambiar de workspace.",
+  },
 }
 
 local preset = ""
@@ -58,6 +89,36 @@ local function displayValue(key)
     return "Off"
   end
   return value
+end
+
+local function describe(key, value)
+  local tip = EFFECT_TIPS[key] and EFFECT_TIPS[key][value]
+  return tip or ("Efecto " .. value .. ".")
+end
+
+local function valueTooltip(key, value)
+  if value == "auto" then
+    local active = effective[key]
+    if type(active) == "string" and active ~= "" then
+      return "Ahora usa " .. active .. ": " .. describe(key, active) .. " Toca para cambiar."
+    end
+    return "Usa el efecto del preset. Toca para cambiar."
+  elseif value == "none" then
+    return "Desactiva este slot. Toca para cambiar."
+  end
+  return value .. ": " .. describe(key, value) .. " Toca para cambiar."
+end
+
+local function slotTooltip(slot)
+  local parts = { slot.tip or ("Efecto de " .. slot.key) }
+  local options = choices[slot.key]
+  if type(options) == "table" then
+    for _, name in ipairs(options) do
+      parts[#parts + 1] = name .. ": " .. describe(slot.key, name)
+    end
+  end
+  parts[#parts + 1] = "Auto usa el preset; Off desactiva el slot."
+  return table.concat(parts, "  ·  ")
 end
 
 local function setSlot(key, value)
@@ -161,12 +222,14 @@ function render()
 
   for _, slot in ipairs(SLOTS) do
     local value = overrideValue(slot.key)
-    rows[#rows + 1] = ui.row({ align = "center", justify = "space_between" }, {
+    rows[#rows + 1] = ui.row({ align = "center", justify = "space_between",
+      tooltip = slotTooltip(slot) }, {
       ui.label({ text = slot.label, fontSize = 13, fontWeight = "bold" }),
       ui.button({
         text = displayValue(slot.key),
         variant = value == "auto" and "ghost" or "outline",
         controlSize = "sm",
+        tooltip = valueTooltip(slot.key, value),
         enabled = not busy,
         onClick = function()
           cycle(slot.key)
@@ -180,6 +243,7 @@ function render()
     text = "Limpiar toda la mezcla",
     variant = "outline",
     controlSize = "sm",
+    tooltip = "Quita todos los overrides y vuelve a la configuración de cada preset.",
     enabled = not busy,
     onClick = function()
       clearAll()

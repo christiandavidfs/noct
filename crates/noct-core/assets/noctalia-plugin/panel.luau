@@ -2,13 +2,20 @@
 -- Panel de Noct Effects: presets de Umbriel y tinte del modo Mono.
 
 local PRESETS = {
-  { id = "neon",    label = "Neon",    desc = "pulse + glow + viñeta" },
-  { id = "cinema",  label = "Cinema",  desc = "scanlines suaves + estela" },
-  { id = "matrix",  label = "Matrix",  desc = "scanlines + pulse + viñeta" },
-  { id = "minimal", label = "Minimal", desc = "solo borde vivo" },
-  { id = "custom",  label = "Libre",   desc = "solo lo que mezcles" },
-  { id = "mono",    label = "Mono",    desc = "todo gris o duotono" },
-  { id = "off",     label = "Off",     desc = "sin efectos" },
+  { id = "neon",    label = "Neon",    desc = "pulse + glow + viñeta",
+    tip = "Borde pulsante, halo de cursor, viñeta y animaciones con rebote." },
+  { id = "cinema",  label = "Cinema",  desc = "scanlines suaves + estela",
+    tip = "Viñeta de pantalla, scanlines por ventana y estela corta de cursor." },
+  { id = "matrix",  label = "Matrix",  desc = "scanlines + pulse + viñeta",
+    tip = "Scanlines, borde pulsante, rastro largo de cursor y barrido de workspaces." },
+  { id = "minimal", label = "Minimal", desc = "solo borde vivo",
+    tip = "Solo un borde vivo alrededor de la ventana enfocada." },
+  { id = "custom",  label = "Libre",   desc = "solo lo que mezcles",
+    tip = "Empieza sin efectos y añade solo los que elijas en Mezclar." },
+  { id = "mono",    label = "Mono",    desc = "todo gris o duotono",
+    tip = "Todo el escritorio en gris con scanlines y viñeta; aquí aplican tinte e intensidad." },
+  { id = "off",     label = "Off",     desc = "sin efectos",
+    tip = "Desactiva todos los efectos. La mezcla guardada se conserva." },
 }
 
 local current = noctalia.state.get("preset") or "mono"
@@ -18,6 +25,7 @@ if tint == "" then
 end
 local intensity = tonumber(noctalia.state.get("intensity")) or 100
 local overrides = {}
+local effects = {}
 local status = ""
 local busy = false
 
@@ -29,6 +37,20 @@ local function countKeys(tableValue)
     end
   end
   return count
+end
+
+local function screenName()
+  for _, entry in ipairs(effects) do
+    local kind, name = string.match(entry, "^([^=]+)=(.*)$")
+    if kind == "screen" then
+      return name
+    end
+  end
+  return nil
+end
+
+local function monoActive()
+  return screenName() == "noct-mono"
 end
 
 local function render()
@@ -58,6 +80,7 @@ local function render()
       variant = active and "primary" or "ghost",
       contentAlign = "start",
       controlSize = "sm",
+      tooltip = preset.tip,
       enabled = not busy,
       onClick = function()
         applyPreset(preset.id)
@@ -74,6 +97,7 @@ local function render()
     text = mixLabel,
     variant = "outline",
     controlSize = "sm",
+    tooltip = "Elige el efecto de cada slot: borde, cursor, pantalla, ventana y animaciones.",
     enabled = not busy,
     onClick = function()
       panel.close()
@@ -83,7 +107,20 @@ local function render()
 
   rows[#rows + 1] = ui.separator({})
 
-  rows[#rows + 1] = ui.row({ align = "center", justify = "space_between" }, {
+  if not monoActive() then
+    local screen = screenName()
+    rows[#rows + 1] = ui.label({
+      text = "Mono no está activo"
+        .. (screen and (" · Pantalla = " .. screen) or "")
+        .. ". Ajusta el tinte o la intensidad para activarlo.",
+      fontSize = 11,
+      color = "on_surface/0.6",
+      maxWidth = 340,
+    })
+  end
+
+  rows[#rows + 1] = ui.row({ align = "center", justify = "space_between",
+    tooltip = "El tinte solo afecta a Mono. Si Mono no está activo, cambiarlo lo activa." }, {
     ui.label({ text = "Tinte de Mono", fontSize = 13, fontWeight = "bold" }),
     ui.label({
       text = tint or "gris puro",
@@ -107,13 +144,15 @@ local function render()
     text = "Gris puro",
     variant = (tint == nil) and "primary" or "outline",
     controlSize = "sm",
+    tooltip = "Quita el tinte y deja Mono en blanco y negro.",
     enabled = not busy,
     onClick = function()
       setTint("none")
     end,
   })
 
-  rows[#rows + 1] = ui.row({ align = "center", justify = "space_between" }, {
+  rows[#rows + 1] = ui.row({ align = "center", justify = "space_between",
+    tooltip = "La intensidad solo afecta a Mono. Si Mono no está activo, moverla lo activa." }, {
     ui.label({ text = "Intensidad de Mono", fontSize = 13, fontWeight = "bold" }),
     ui.label({
       text = tostring(intensity) .. "%",
@@ -168,7 +207,7 @@ local function run(args, done)
   end
 end
 
-local function syncState(preset, color, level, ov)
+local function syncState(preset, color, level, ov, fx)
   if preset ~= nil then
     current = preset
   end
@@ -178,6 +217,9 @@ local function syncState(preset, color, level, ov)
   end
   if type(ov) == "table" then
     overrides = ov
+  end
+  if type(fx) == "table" then
+    effects = fx
   end
   noctalia.state.set("preset", current)
   noctalia.state.set("tint", tint or "")
@@ -189,7 +231,7 @@ local function refresh()
     if ok then
       local decoded = noctalia.json.decode(out)
       if type(decoded) == "table" then
-        syncState(decoded.preset, decoded.tint, decoded.intensity, decoded.overrides)
+        syncState(decoded.preset, decoded.tint, decoded.intensity, decoded.overrides, decoded.effects)
       end
     end
     render()
@@ -223,12 +265,17 @@ function setIntensity(value)
   busy = true
   status = "Aplicando intensidad " .. value .. "%…"
   render()
-  run({ "noct", "effects", "intensity", tostring(value) }, function(ok, out)
+  run({ "noct", "effects", "intensity", tostring(value), "--json" }, function(ok, out)
     busy = false
     if ok then
+      local decoded = noctalia.json.decode(out)
+      if type(decoded) == "table" and type(decoded.message) == "string" then
+        status = decoded.message
+      else
+        status = "Intensidad aplicada: " .. value .. "%"
+      end
       intensity = value
-      syncState("mono", tint, intensity)
-      status = "Intensidad aplicada: " .. value .. "%"
+      syncState(nil, tint, intensity)
       refresh()
     else
       status = "Error: " .. out
@@ -244,11 +291,16 @@ function setTint(color)
   busy = true
   status = "Aplicando tinte " .. color .. "…"
   render()
-  run({ "noct", "effects", "tint", color }, function(ok, out)
+  run({ "noct", "effects", "tint", color, "--json" }, function(ok, out)
     busy = false
     if ok then
-      syncState("mono", color == "none" and nil or color, intensity)
-      status = "Tinte aplicado: " .. color
+      local decoded = noctalia.json.decode(out)
+      if type(decoded) == "table" and type(decoded.message) == "string" then
+        status = decoded.message
+      else
+        status = "Tinte aplicado: " .. color
+      end
+      syncState(nil, color == "none" and nil or color, intensity)
       refresh()
     else
       status = "Error: " .. out

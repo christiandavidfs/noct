@@ -971,6 +971,37 @@ pub struct TintReport {
     pub message: String,
 }
 
+/// Aplica un ajuste de Mono. Si el slot `screen` no es `noct-mono`, lo activa
+/// con un override para que el tinte/intensidad se vean de verdad.
+fn apply_mono_adjustment(preset_id: &str) -> Result<(ApplyReport, bool)> {
+    let Some(preset) = preset(preset_id) else {
+        bail!("preset desconocido: {preset_id}");
+    };
+    let mut overrides = load_overrides();
+    let previous = std::fs::read_to_string(overrides_path()).ok();
+    let has_mono_screen = effective_effects(preset, &overrides)
+        .iter()
+        .any(|(kind, name)| *kind == "screen" && *name == "noct-mono");
+    let forced = !has_mono_screen;
+    if forced {
+        overrides.set("screen", "noct-mono");
+        if let Err(err) = save_overrides(&overrides) {
+            restore(&overrides_path(), previous);
+            return Err(err);
+        }
+    }
+
+    match apply_with_overrides(preset_id, &overrides, false) {
+        Ok((report, _)) => Ok((report, forced)),
+        Err(err) => {
+            if forced {
+                restore(&overrides_path(), previous);
+            }
+            Err(err)
+        }
+    }
+}
+
 /// Cambia el tinte del preset Mono y lo deja aplicado.
 pub fn set_tint(color: &str, dry_run: bool) -> Result<(TintReport, String)> {
     let normalized = normalize_tint(color)?;
@@ -1001,16 +1032,22 @@ pub fn set_tint(color: &str, dry_run: bool) -> Result<(TintReport, String)> {
     std::fs::write(&path, value)
         .with_context(|| format!("no se pudo escribir {}", path.display()))?;
 
-    let (apply_report, _) = apply("mono", false)?;
+    let preset_id = base_preset_for_mix();
+    let (apply_report, forced) = apply_mono_adjustment(&preset_id)?;
+    let message = if forced {
+        format!("Mono activado. {}", apply_report.message)
+    } else {
+        apply_report.message
+    };
     Ok((
         TintReport {
             tint: normalized,
-            preset: "mono".into(),
+            preset: apply_report.preset,
             file: apply_report.file,
             written: true,
             validated: apply_report.validated,
             reloaded: apply_report.reloaded,
-            message: apply_report.message,
+            message,
         },
         shader,
     ))
@@ -1056,16 +1093,22 @@ pub fn set_intensity(value: u8, dry_run: bool) -> Result<(IntensityReport, Strin
     std::fs::write(&path, value.to_string())
         .with_context(|| format!("no se pudo escribir {}", path.display()))?;
 
-    let (apply_report, _) = apply("mono", false)?;
+    let preset_id = base_preset_for_mix();
+    let (apply_report, forced) = apply_mono_adjustment(&preset_id)?;
+    let message = if forced {
+        format!("Mono activado. {}", apply_report.message)
+    } else {
+        apply_report.message
+    };
     Ok((
         IntensityReport {
             intensity: value,
-            preset: "mono".into(),
+            preset: apply_report.preset,
             file: apply_report.file,
             written: true,
             validated: apply_report.validated,
             reloaded: apply_report.reloaded,
-            message: apply_report.message,
+            message,
         },
         shader,
     ))
