@@ -13,19 +13,14 @@ const OLD_DAILY_PLUGIN: &str = "nzlov/daily-wallpaper";
 const BING_TIMER: &str = "noct-bing-wallpaper.timer";
 const GREETER_TIMER: &str = "noct-wallpaper-greeter.timer";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum WallpaperMode {
     /// El wallpaper elegido no se toca hasta que el usuario lo cambie.
+    #[default]
     Fixed,
     /// Noct descarga el Bing del día y actualiza escritorio y greeter.
     BingDaily,
-}
-
-impl Default for WallpaperMode {
-    fn default() -> Self {
-        Self::Fixed
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,6 +58,9 @@ pub struct WallpaperStatus {
     pub bing_timer: bool,
     pub greeter_timer: bool,
     pub daily_plugin: bool,
+    pub applied: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
     pub config_file: String,
 }
 
@@ -169,6 +167,14 @@ pub fn apply(path: &Path) -> Result<()> {
     Ok(())
 }
 
+fn finish(mut status: WallpaperStatus, applied: Result<()>) -> Result<WallpaperStatus> {
+    if let Err(err) = applied {
+        status.applied = false;
+        status.message = Some(format!("{err:#}"));
+    }
+    Ok(status)
+}
+
 /// Fija un wallpaper y desactiva cualquier actualización automática.
 pub fn set_fixed(path: Option<&str>) -> Result<WallpaperStatus> {
     let chosen = match path {
@@ -191,8 +197,7 @@ pub fn set_fixed(path: Option<&str>) -> Result<WallpaperStatus> {
     set_daily_plugin(false);
     set_bing_timer(false);
     ensure_greeter_timer();
-    apply(&chosen_path)?;
-    Ok(status())
+    finish(status(), apply(&chosen_path))
 }
 
 /// Descarga el Bing del día y lo aplica sin activar la rotación diaria.
@@ -207,8 +212,7 @@ pub fn bing_once() -> Result<WallpaperStatus> {
     set_daily_plugin(false);
     set_bing_timer(false);
     ensure_greeter_timer();
-    apply(&path)?;
-    Ok(status())
+    finish(status(), apply(&path))
 }
 
 /// Activa Bing diario: descarga el de hoy, instala los timers y desactiva
@@ -226,8 +230,7 @@ pub fn set_bing_daily() -> Result<WallpaperStatus> {
     let _ = env::run("systemctl", &["--user", "daemon-reload"]);
     ensure_greeter_timer();
     set_bing_timer(true);
-    apply(&path)?;
-    Ok(status())
+    finish(status(), apply(&path))
 }
 
 /// Ejecuta el Bing del día. Si el modo es Bing diario, mantiene la rotación;
@@ -239,8 +242,7 @@ pub fn run_bing() -> Result<WallpaperStatus> {
         let mut config = config;
         config.last_bing = Some(path.display().to_string());
         save_config(&config)?;
-        apply(&path)?;
-        Ok(status())
+        finish(status(), apply(&path))
     } else {
         bing_once()
     }
@@ -316,6 +318,8 @@ pub fn status() -> WallpaperStatus {
         bing_timer: is_enabled(BING_TIMER),
         greeter_timer: is_enabled(GREETER_TIMER),
         daily_plugin: daily_plugin_enabled(),
+        applied: true,
+        message: None,
         config_file: config_path().display().to_string(),
     }
 }

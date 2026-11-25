@@ -1475,6 +1475,11 @@ fn print_wallpaper_status(status: &wallpaper::WallpaperStatus) {
         if status.greeter_timer { "sí" } else { "no" },
         if status.daily_plugin { "sí" } else { "no" },
     );
+    if !status.applied {
+        if let Some(message) = &status.message {
+            println!("  aviso: no se pudo aplicar ahora: {message}");
+        }
+    }
     println!("  config: {}", status.config_file);
 }
 
