@@ -116,6 +116,16 @@ enum EffectsCmd {
         #[arg(long)]
         json: bool,
     },
+    /// Cambia la intensidad del preset Mono (0-100)
+    Intensity {
+        /// Intensidad 0-100
+        value: u8,
+        /// Muestra el shader generado sin escribir nada
+        #[arg(long)]
+        dry_run: bool,
+        #[arg(long)]
+        json: bool,
+    },
     /// Cambia el tinte del preset Mono (#RRGGBB o none)
     Tint {
         /// Color en hex, o "none" para gris puro
@@ -1176,6 +1186,9 @@ fn cmd_effects(cmd: EffectsCmd) -> Result<ExitCode> {
                 } else if current.preset.as_deref() == Some("mono") {
                     println!("  tinte: gris puro");
                 }
+                if current.preset.as_deref() == Some("mono") {
+                    println!("  intensidad: {}%", current.intensity);
+                }
                 if !current.effects.is_empty() {
                     println!("  efectos: {}", current.effects.join(", "));
                 }
@@ -1211,6 +1224,26 @@ Abre el panel con:"
                 );
                 println!("  noctalia msg panel-toggle noct/effects:panel");
                 println!("En el control center, añade el tile «Noct Effects» si no aparece solo.");
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        EffectsCmd::Intensity {
+            value,
+            dry_run,
+            json,
+        } => {
+            let (report, shader) = effects::set_intensity(value, dry_run)?;
+            if dry_run {
+                println!("{shader}");
+            }
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else if !dry_run {
+                println!("Intensidad: {}%", report.intensity);
+                if report.validated {
+                    println!("  validación: ok");
+                }
+                println!("  {}", report.message);
             }
             Ok(ExitCode::SUCCESS)
         }

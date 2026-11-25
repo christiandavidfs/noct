@@ -47,6 +47,22 @@ fn tint_path() -> PathBuf {
     custom_root().join("screen").join("noct-mono").join("tint")
 }
 
+fn intensity_path() -> PathBuf {
+    custom_root()
+        .join("screen")
+        .join("noct-mono")
+        .join("intensity")
+}
+
+/// Intensidad activa del preset Mono (0–100, por defecto 100).
+pub fn current_intensity() -> u8 {
+    std::fs::read_to_string(intensity_path())
+        .ok()
+        .and_then(|text| text.trim().parse::<u8>().ok())
+        .map(|value| value.min(100))
+        .unwrap_or(100)
+}
+
 /// Tinte activo del preset Mono (`None` = gris puro).
 pub fn current_tint() -> Option<String> {
     let text = std::fs::read_to_string(tint_path()).ok()?;
@@ -88,7 +104,7 @@ fn normalize_tint(color: &str) -> Result<Option<String>> {
     Ok(Some(format!("#{r:02x}{g:02x}{b:02x}")))
 }
 
-fn render_mono_shader(tint: Option<&str>) -> String {
+fn render_mono_shader(tint: Option<&str>, intensity: u8) -> String {
     let (r, g, b, amount) = match tint.and_then(parse_hex) {
         Some((r, g, b)) => {
             let max = r.max(g).max(b).max(1) as f64;
@@ -101,7 +117,10 @@ fn render_mono_shader(tint: Option<&str>) -> String {
         .replace("__G__", &format!("{g:.4}"))
         .replace("__B__", &format!("{b:.4}"))
         .replace("__MIX__", &format!("{amount:.2}"))
-        .replace("// __NOCT_TINT__ se sustituye al aplicar el preset.\n", "")
+        .replace(
+            "__INTENSITY__",
+            &format!("{:.2}", intensity.min(100) as f64 / 100.0),
+        )
 }
 
 fn write_if_changed(path: &Path, content: &str) -> Result<()> {
@@ -122,9 +141,10 @@ fn ensure_custom_assets() -> Result<()> {
             .with_context(|| format!("no se pudo crear {}", dir.display()))?;
         write_if_changed(&dir.join("effect.toml"), effect)?;
         let tint = current_tint();
+        let intensity = current_intensity();
         write_if_changed(
             &dir.join("shader.glsl"),
-            &render_mono_shader(tint.as_deref()),
+            &render_mono_shader(tint.as_deref(), intensity),
         )?;
         let _ = shader;
     }
@@ -326,6 +346,8 @@ fn render_effects(preset_id: &str, preset: &Preset) -> String {
     let effects = preset_effects(preset);
     if !effects.is_empty() {
         out.push_str("[effects]\n");
+        // Las capturas y grabaciones deben mostrar el mismo look que la pantalla.
+        out.push_str("in_capture = true\n");
         for (kind, name) in &effects {
             out.push_str(&format!("{kind} = \"{name}\"\n"));
         }
@@ -563,7 +585,7 @@ pub struct TintReport {
 /// Cambia el tinte del preset Mono y lo deja aplicado.
 pub fn set_tint(color: &str, dry_run: bool) -> Result<(TintReport, String)> {
     let normalized = normalize_tint(color)?;
-    let shader = render_mono_shader(normalized.as_deref());
+    let shader = render_mono_shader(normalized.as_deref(), current_intensity());
     let file = effects_file();
 
     if dry_run {
@@ -606,11 +628,67 @@ pub fn set_tint(color: &str, dry_run: bool) -> Result<(TintReport, String)> {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct IntensityReport {
+    pub intensity: u8,
+    pub preset: String,
+    pub file: String,
+    pub written: bool,
+    pub validated: bool,
+    pub reloaded: bool,
+    pub message: String,
+}
+
+/// Cambia la intensidad del preset Mono (0–100) y lo deja aplicado.
+pub fn set_intensity(value: u8, dry_run: bool) -> Result<(IntensityReport, String)> {
+    let value = value.min(100);
+    let shader = render_mono_shader(current_tint().as_deref(), value);
+    let file = effects_file();
+
+    if dry_run {
+        return Ok((
+            IntensityReport {
+                intensity: value,
+                preset: "mono".into(),
+                file: file.display().to_string(),
+                written: false,
+                validated: false,
+                reloaded: false,
+                message: "dry-run: no se escribió nada".into(),
+            },
+            shader,
+        ));
+    }
+
+    let path = intensity_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)
+            .with_context(|| format!("no se pudo crear {}", parent.display()))?;
+    }
+    std::fs::write(&path, value.to_string())
+        .with_context(|| format!("no se pudo escribir {}", path.display()))?;
+
+    let (apply_report, _) = apply("mono", false)?;
+    Ok((
+        IntensityReport {
+            intensity: value,
+            preset: "mono".into(),
+            file: apply_report.file,
+            written: true,
+            validated: apply_report.validated,
+            reloaded: apply_report.reloaded,
+            message: apply_report.message,
+        },
+        shader,
+    ))
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct CurrentEffects {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preset: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tint: Option<String>,
+    pub intensity: u8,
     pub effects: Vec<String>,
     pub animations: Vec<String>,
 }
@@ -622,6 +700,7 @@ pub fn current() -> Result<CurrentEffects> {
         return Ok(CurrentEffects {
             preset: None,
             tint: current_tint(),
+            intensity: current_intensity(),
             effects: Vec::new(),
             animations: Vec::new(),
         });
@@ -659,6 +738,7 @@ pub fn current() -> Result<CurrentEffects> {
     Ok(CurrentEffects {
         preset,
         tint: current_tint(),
+        intensity: current_intensity(),
         effects,
         animations,
     })

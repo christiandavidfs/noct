@@ -15,6 +15,7 @@ local tint = noctalia.state.get("tint")
 if tint == "" then
   tint = nil
 end
+local intensity = tonumber(noctalia.state.get("intensity")) or 100
 local status = ""
 local busy = false
 
@@ -84,6 +85,31 @@ local function render()
     end,
   })
 
+  rows[#rows + 1] = ui.row({ align = "center", justify = "space_between" }, {
+    ui.label({ text = "Intensidad de Mono", fontSize = 13, fontWeight = "bold" }),
+    ui.label({
+      text = tostring(intensity) .. "%",
+      fontSize = 12,
+      color = "on_surface/0.65",
+    }),
+  })
+
+  rows[#rows + 1] = ui.slider({
+    key = "intensity",
+    min = 0,
+    max = 100,
+    step = 1,
+    value = intensity,
+    enabled = not busy,
+    onChange = function(value)
+      intensity = math.floor(tonumber(value) or intensity)
+      render()
+    end,
+    onDragEnd = function(value)
+      setIntensity(math.floor(tonumber(value) or intensity))
+    end,
+  })
+
   if status ~= "" then
     rows[#rows + 1] = ui.label({
       text = status,
@@ -114,13 +140,17 @@ local function run(args, done)
   end
 end
 
-local function syncState(preset, color)
+local function syncState(preset, color, level)
   if preset ~= nil then
     current = preset
   end
   tint = color
+  if level ~= nil then
+    intensity = math.floor(tonumber(level) or intensity)
+  end
   noctalia.state.set("preset", current)
   noctalia.state.set("tint", tint or "")
+  noctalia.state.set("intensity", intensity)
 end
 
 local function refresh()
@@ -128,7 +158,7 @@ local function refresh()
     if ok then
       local decoded = noctalia.json.decode(out)
       if type(decoded) == "table" then
-        syncState(decoded.preset, decoded.tint)
+        syncState(decoded.preset, decoded.tint, decoded.intensity)
       end
     end
     render()
@@ -145,8 +175,29 @@ function applyPreset(id)
   run({ "noct", "effects", "apply", id }, function(ok, out)
     busy = false
     if ok then
-      syncState(id, tint)
+      syncState(id, tint, intensity)
       status = "Preset aplicado: " .. id
+      refresh()
+    else
+      status = "Error: " .. out
+      render()
+    end
+  end)
+end
+
+function setIntensity(value)
+  if busy then
+    return
+  end
+  busy = true
+  status = "Aplicando intensidad " .. value .. "%…"
+  render()
+  run({ "noct", "effects", "intensity", tostring(value) }, function(ok, out)
+    busy = false
+    if ok then
+      intensity = value
+      syncState("mono", tint, intensity)
+      status = "Intensidad aplicada: " .. value .. "%"
       refresh()
     else
       status = "Error: " .. out
@@ -165,7 +216,7 @@ function setTint(color)
   run({ "noct", "effects", "tint", color }, function(ok, out)
     busy = false
     if ok then
-      syncState("mono", color == "none" and nil or color)
+      syncState("mono", color == "none" and nil or color, intensity)
       status = "Tinte aplicado: " .. color
       refresh()
     else
