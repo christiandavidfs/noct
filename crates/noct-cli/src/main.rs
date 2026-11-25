@@ -295,7 +295,7 @@ enum KeysCmd {
     Set {
         /// Chord, por ejemplo "Mod+Return"
         chord: String,
-        /// Acción de Umbriel, por ejemplo "window-close" o "spawn:kitty"
+        /// Acción de Umbriel, por ejemplo "window-close" o "spawn kitty"
         action: String,
         /// Desactiva la repetición al mantener pulsado
         #[arg(long)]

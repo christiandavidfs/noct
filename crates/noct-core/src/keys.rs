@@ -635,12 +635,14 @@ fn parse_action_catalog(text: &str) -> Vec<String> {
     out
 }
 
-/// Comprueba una acción contra el catálogo, aceptando `spawn:...` y variantes.
+/// Comprueba una acción contra el catálogo. Acepta tanto la sintaxis nueva
+/// (`spawn kitty`, `workspace-switch 3`) como la antigua (`spawn:kitty`).
 pub fn is_valid_action(action: &str, catalog: &[String]) -> bool {
-    let base = action.split(':').next().unwrap_or(action);
+    let action = action.trim();
+    let base = action.split([':', ' ']).next().unwrap_or(action);
     catalog
         .iter()
-        .any(|entry| entry.split(':').next().unwrap_or(entry) == base)
+        .any(|entry| entry.split([':', ' ']).next().unwrap_or(entry) == base)
 }
 
 #[cfg(test)]
@@ -657,13 +659,13 @@ mod tests {
     fn parses_umbriel_keybinds() {
         let text = r#"
 [keybinds]
-"Mod+Return" = { action = "spawn:kitty", repeat = false }
+"Mod+Return" = { action = "spawn kitty", repeat = false }
 "Mod+Q" = "window-close"
 "#;
         let binds = parse_umbriel_keybinds(text, Path::new("test.toml"));
         assert_eq!(binds.len(), 2);
         assert_eq!(binds[0].chord, "Mod+Return");
-        assert_eq!(binds[0].action, "spawn:kitty");
+        assert_eq!(binds[0].action, "spawn kitty");
         assert_eq!(binds[0].repeat, Some(false));
         assert_eq!(binds[1].action, "window-close");
     }
@@ -679,6 +681,15 @@ mod tests {
             Some("noctalia msg session lock")
         );
         assert!(migrate_command("qs -c noctalia-shell ipc call unknown thing").is_none());
+    }
+
+    #[test]
+    fn accepts_old_and_new_action_syntax() {
+        let catalog = vec!["spawn".to_string(), "workspace-switch".to_string()];
+        assert!(is_valid_action("spawn kitty", &catalog));
+        assert!(is_valid_action("workspace-switch 3", &catalog));
+        assert!(is_valid_action("spawn:kitty", &catalog));
+        assert!(!is_valid_action("nope", &catalog));
     }
 }
 
@@ -796,8 +807,8 @@ fn translate_niri_action(action: &str, args: &[String]) -> Option<String> {
         if args.is_empty() {
             return None;
         }
-        // No traducir comandos con shell complejo: Umbriel no documenta cómo
-        // interpreta `spawn:` y podríamos escribir un atajo roto.
+        // No traducir comandos con shell complejo: Umbriel ejecuta `spawn`
+        // como un comando, pero no queremos escribir un atajo roto.
         let simple = args.iter().all(|arg| {
             arg.chars()
                 .all(|c| c.is_ascii_alphanumeric() || " -_.:/@%+=,".contains(c))
@@ -823,7 +834,7 @@ fn translate_niri_action(action: &str, args: &[String]) -> Option<String> {
                 .collect::<Vec<_>>()
                 .join(" ")
         };
-        return Some(format!("spawn:{command}"));
+        return Some(format!("spawn {command}"));
     }
 
     let first = args.first().map(String::as_str).unwrap_or_default();
@@ -857,18 +868,18 @@ fn translate_niri_action(action: &str, args: &[String]) -> Option<String> {
         "switch-preset-column-width-back" => "window-cycle-primary-extent-back".to_string(),
         "switch-preset-window-height" => "window-cycle-secondary-extent".to_string(),
         "switch-preset-window-height-back" => "window-cycle-secondary-extent-back".to_string(),
-        "expand-column-to-available-width" => "window-set-primary-extent:1.0".to_string(),
+        "expand-column-to-available-width" => "window-set-primary-extent 1.0".to_string(),
         "center-column" => "column-center".to_string(),
         "set-column-width" => format!(
-            "window-modify-primary-extent:{}",
+            "window-modify-primary-extent {}",
             percent_delta(first).unwrap_or_default()
         ),
         "set-window-height" => format!(
-            "window-modify-secondary-extent:{}",
+            "window-modify-secondary-extent {}",
             percent_delta(first).unwrap_or_default()
         ),
         "toggle-window-floating" => "window-toggle-floating".to_string(),
-        "maximize-column" => "window-set-primary-extent:1.0".to_string(),
+        "maximize-column" => "window-set-primary-extent 1.0".to_string(),
         "fullscreen-window" => "window-toggle-fullscreen".to_string(),
         "toggle-column-tabbed-display" => "column-toggle-tabbed".to_string(),
         "maximize-window-to-edges" => "window-toggle-maximize-to-edges".to_string(),
@@ -881,13 +892,13 @@ fn translate_niri_action(action: &str, args: &[String]) -> Option<String> {
             if first.is_empty() {
                 return None;
             }
-            format!("workspace-switch:{first}")
+            format!("workspace-switch {first}")
         }
         "move-column-to-workspace" => {
             if first.is_empty() {
                 return None;
             }
-            format!("column-move-to-workspace:{first}")
+            format!("column-move-to-workspace {first}")
         }
         "toggle-overview" => "overview-toggle".to_string(),
         "show-hotkey-overlay" => "cheatsheet-open".to_string(),
@@ -897,7 +908,7 @@ fn translate_niri_action(action: &str, args: &[String]) -> Option<String> {
         _ => return None,
     };
 
-    if mapped.ends_with(':') {
+    if mapped.ends_with(':') || mapped.ends_with(' ') {
         return None;
     }
     Some(mapped)
@@ -1081,15 +1092,15 @@ mod translate_tests {
         );
         assert_eq!(
             translate_niri_action("focus-workspace", &["3".into()]).as_deref(),
-            Some("workspace-switch:3")
+            Some("workspace-switch 3")
         );
         assert_eq!(
             translate_niri_action("set-column-width", &["-10%".into()]).as_deref(),
-            Some("window-modify-primary-extent:-0.1")
+            Some("window-modify-primary-extent -0.1")
         );
         assert_eq!(
             translate_niri_action("spawn", &["alacritty".into()]).as_deref(),
-            Some("spawn:alacritty")
+            Some("spawn alacritty")
         );
         assert!(translate_niri_action(
             "spawn",
