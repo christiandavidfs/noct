@@ -39,6 +39,7 @@ WITH_NOCTALIA=1
 WITH_UMBRIEL=1
 FROM_SOURCE=0
 MIGRATE=1
+WITH_GREETER=0
 DEBIAN_REPO_READY=0
 SUSE_REPO_READY=0
 WALLPAPER_MODE=""
@@ -63,6 +64,7 @@ Opciones:
   --from-source             Fuerza compilación de Noctalia y Umbriel
   --wallpaper fixed|bing-daily
   --wallpaper-path RUTA     Wallpaper fijo a aplicar
+  --with-greeter            Instala noctalia-greeter (no configura greetd)
   --no-migrate              No migra la sintaxis antigua de Umbriel
   -h, --help
 
@@ -121,6 +123,7 @@ while [ $# -gt 0 ]; do
     --from-source) FROM_SOURCE=1 ;;
     --wallpaper) shift; WALLPAPER_MODE="${1:?falta fixed o bing-daily}" ;;
     --wallpaper-path) shift; WALLPAPER_PATH="${1:?falta la ruta}" ;;
+    --with-greeter) WITH_GREETER=1 ;;
     --no-migrate) MIGRATE=0 ;;
     -h|--help) usage; exit 0 ;;
     *) die "opción desconocida: $1 (usa --help)" ;;
@@ -248,6 +251,45 @@ setup_debian_repo() {
     "https://pkg.noctalia.dev/deb/noctalia-${src}.sources"
   as_root apt-get update
   DEBIAN_REPO_READY=1
+}
+
+add_debian_backports() {
+  [ "$NO_SYSTEM" -eq 1 ] && return 0
+  log "Habilitando Debian backports para Umbriel"
+  as_root sh -c 'cat > /etc/apt/sources.list.d/debian-backports.sources <<EOF
+Types: deb
+URIs: http://deb.debian.org/debian
+Suites: trixie-backports
+Components: main
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+EOF'
+  as_root apt-get update
+}
+
+setup_terra_repo() {
+  [ "$NO_SYSTEM" -eq 1 ] && return 0
+  local ver
+  ver="$(rpm -E %fedora 2>/dev/null || true)"
+  [ -n "$ver" ] || { warn "no se pudo detectar la versión de Fedora"; return 1; }
+  warn "Habilitando el repositorio Terra (tercero) para umbriel-nightly"
+  as_root dnf install -y --nogpgcheck --repofrompath "terra,https://repos.fyralabs.com/terra${ver}" terra-release
+}
+
+install_greeter() {
+  log "Greeter de Noctalia (opcional)"
+  case "$FAMILY" in
+    debian) pkg_install noctalia-greeter || warn "no se pudo instalar noctalia-greeter" ;;
+    arch) pkg_install noctalia-greeter || warn "no está en los repos; búscalo en AUR si lo quieres" ;;
+    fedora) pkg_install noctalia-greeter || warn "no está en los repos de Fedora" ;;
+    *) warn "instala el greeter de Noctalia manualmente" ;;
+  esac
+  cat <<'EOF'
+  Para usarlo, configura greetd (/etc/greetd/config.toml):
+    [default_session]
+    command = "noctalia-greeter-session"
+    user = "greeter"
+  Luego: sudo systemctl enable --now greetd
+EOF
 }
 
 setup_suse_repo() {
@@ -415,9 +457,12 @@ install_umbriel() {
     debian)
       if setup_debian_repo; then
         if [ "$VERSION_CODENAME" = trixie ]; then
-          as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y -t trixie-backports umbriel
+          if ! as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y -t trixie-backports umbriel; then
+            add_debian_backports
+            as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y -t trixie-backports umbriel || build_umbriel
+          fi
         else
-          pkg_install umbriel
+          pkg_install umbriel || build_umbriel
         fi
         pkg_install_optional xdg-desktop-portal-umbriel
         if ! need_cmd umbriel; then build_umbriel; fi
@@ -426,10 +471,16 @@ install_umbriel() {
       fi
       ;;
     fedora)
-      pkg_install umbriel-nightly || {
-        warn "umbriel-nightly no está disponible (Terra); compilando desde fuente"
-        build_umbriel
-      }
+      if ! pkg_install umbriel-nightly; then
+        if setup_terra_repo; then
+          pkg_install umbriel-nightly || {
+            warn "umbriel-nightly sigue sin estar disponible; compilando desde fuente"
+            build_umbriel
+          }
+        else
+          build_umbriel
+        fi
+      fi
       ;;
     suse)
       setup_suse_repo
@@ -678,6 +729,9 @@ fi
 
 if [ "$WITH_NOCTALIA" -eq 1 ]; then
   install_noctalia
+fi
+if [ "$WITH_GREETER" -eq 1 ]; then
+  install_greeter
 fi
 if [ "$WITH_UMBRIEL" -eq 1 ]; then
   install_umbriel
