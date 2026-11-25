@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
-use noct_core::{config, doctor, effects, env, keys, profile, run, sync, theme};
+use noct_core::{config, doctor, effects, env, keys, profile, run, sync, theme, wallpaper};
 
 #[derive(Parser)]
 #[command(
@@ -47,6 +47,11 @@ enum Commands {
     Effects {
         #[command(subcommand)]
         cmd: EffectsCmd,
+    },
+    /// Gestiona el wallpaper fijo o el Bing diario
+    Wallpaper {
+        #[command(subcommand)]
+        cmd: WallpaperCmd,
     },
     /// Sincroniza tema y wallpaper con el launcher Android
     Sync {
@@ -91,6 +96,42 @@ enum SyncCmd {
         /// Wallpaper a servir (por defecto, el del tema)
         #[arg(long)]
         wallpaper: Option<PathBuf>,
+    },
+}
+
+#[derive(Subcommand)]
+enum WallpaperCmd {
+    /// Muestra el modo, el wallpaper activo y los timers
+    Status {
+        #[arg(long)]
+        json: bool,
+    },
+    /// Fija un wallpaper y desactiva cualquier rotación automática
+    Fixed {
+        /// Ruta del wallpaper; si se omite, usa el actual
+        path: Option<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Activa el Bing diario y sincroniza escritorio + greeter
+    BingDaily {
+        #[arg(long)]
+        json: bool,
+    },
+    /// Descarga y aplica el Bing de hoy
+    Bing {
+        /// No imprime nada si todo va bien (para systemd)
+        #[arg(long)]
+        quiet: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Sincroniza el greeter si el wallpaper activo cambió
+    SyncGreeter {
+        #[arg(long)]
+        quiet: bool,
+        #[arg(long)]
+        json: bool,
     },
 }
 
@@ -341,6 +382,7 @@ fn run() -> Result<ExitCode> {
         Commands::Keys { cmd } => cmd_keys(cmd),
         Commands::Bridge { cmd } => cmd_bridge(cmd),
         Commands::Effects { cmd } => cmd_effects(cmd),
+        Commands::Wallpaper { cmd } => cmd_wallpaper(cmd),
         Commands::Sync { cmd } => cmd_sync(cmd),
         Commands::Run {
             force_fallback,
@@ -1409,6 +1451,87 @@ Abre el panel con:"
                 Ok(ExitCode::SUCCESS)
             }
         },
+    }
+}
+
+fn print_wallpaper_status(status: &wallpaper::WallpaperStatus) {
+    let mode = match status.mode {
+        wallpaper::WallpaperMode::Fixed => "fijo",
+        wallpaper::WallpaperMode::BingDaily => "Bing diario",
+    };
+    println!("Wallpaper: {mode}");
+    if let Some(path) = &status.path {
+        println!("  fijado: {path}");
+    }
+    if let Some(current) = &status.current {
+        println!("  actual: {current}");
+    }
+    if let Some(last) = &status.last_bing {
+        println!("  último Bing: {last}");
+    }
+    println!(
+        "  timer Bing: {} · timer greeter: {} · plugin antiguo: {}",
+        if status.bing_timer { "sí" } else { "no" },
+        if status.greeter_timer { "sí" } else { "no" },
+        if status.daily_plugin { "sí" } else { "no" },
+    );
+    println!("  config: {}", status.config_file);
+}
+
+fn cmd_wallpaper(cmd: WallpaperCmd) -> Result<ExitCode> {
+    match cmd {
+        WallpaperCmd::Status { json } => {
+            let status = wallpaper::status();
+            if json {
+                println!("{}", serde_json::to_string_pretty(&status)?);
+            } else {
+                print_wallpaper_status(&status);
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        WallpaperCmd::Fixed { path, json } => {
+            let value = path.as_ref().map(|path| path.display().to_string());
+            let status = wallpaper::set_fixed(value.as_deref())?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&status)?);
+            } else {
+                print_wallpaper_status(&status);
+                println!("  Bing diario desactivado; el wallpaper queda fijado.");
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        WallpaperCmd::BingDaily { json } => {
+            let status = wallpaper::set_bing_daily()?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&status)?);
+            } else {
+                print_wallpaper_status(&status);
+                println!("  Bing diario activado: escritorio y greeter se actualizarán cada día.");
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        WallpaperCmd::Bing { quiet, json } => {
+            let status = wallpaper::run_bing()?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&status)?);
+            } else if !quiet {
+                print_wallpaper_status(&status);
+            }
+            Ok(ExitCode::SUCCESS)
+        }
+        WallpaperCmd::SyncGreeter { quiet, json } => {
+            let changed = wallpaper::sync_greeter()?;
+            if json {
+                println!("{}", serde_json::json!({ "synced": changed }));
+            } else if !quiet {
+                if changed {
+                    println!("Greeter sincronizado con el wallpaper activo.");
+                } else {
+                    println!("El greeter ya estaba al día.");
+                }
+            }
+            Ok(ExitCode::SUCCESS)
+        }
     }
 }
 

@@ -10,6 +10,7 @@ pub mod profile;
 pub mod run;
 pub mod sync;
 pub mod theme;
+pub mod wallpaper;
 
 pub use doctor::{Check, Report, Severity, Summary};
 pub use theme::{ApplyOptions, Backup, PaletteSet, Step, Theme, Wallpapers};
