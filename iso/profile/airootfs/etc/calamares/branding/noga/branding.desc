@@ -1,6 +1,6 @@
-# Nocturne Linux — branding de Calamares.
+# Noga Linux — branding de Calamares.
 ---
-componentName: nocturne
+componentName: noga
 
 welcomeStyleCalamares: false
 welcomeExpandingLogo: true
@@ -13,13 +13,13 @@ sidebar: widget
 navigation: widget
 
 strings:
-    productName:         Nocturne Linux
-    shortProductName:    Nocturne
+    productName:         Noga Linux
+    shortProductName:    Noga
     version:             2026.11
     shortVersion:        2026.11
-    versionedName:       Nocturne Linux 2026.11
-    shortVersionedName:  Nocturne 2026.11
-    bootloaderEntryName: Nocturne
+    versionedName:       Noga Linux 2026.11
+    shortVersionedName:  Noga 2026.11
+    bootloaderEntryName: Noga
     productUrl:          "https://github.com/christiandavidfs/noct"
     supportUrl:          "https://github.com/christiandavidfs/noct/issues"
     knownIssuesUrl:      "https://github.com/christiandavidfs/noct/issues"
@@ -37,4 +37,4 @@ style:
     SidebarBackgroundCurrent: "#7cffb2"
 
 slideshow:
-    - "/etc/calamares/branding/nocturne/wallpaper-slide.png"
+    - "/etc/calamares/branding/noga/wallpaper-slide.png"

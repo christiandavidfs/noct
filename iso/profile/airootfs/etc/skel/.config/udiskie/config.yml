@@ -1,4 +1,4 @@
-# Nocturne Linux — montaje automático de dispositivos extraíbles.
+# Noga Linux — montaje automático de dispositivos extraíbles.
 program_options:
   automount: true
   notify: true

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Construye la ISO de Nocturne Linux.
+# Construye la ISO de Noga Linux.
 #
 # Uso:
 #   sudo ./iso/build.sh                 # edición slim (sin NVIDIA en el live)
@@ -30,8 +30,8 @@ Uso: build.sh [opciones]
   -h, --help    Muestra esta ayuda
 
 Salida:
-  build/iso-out/nocturne-<fecha>-x86_64.iso
-  build/iso-out/nocturne-nvidia-<fecha>-x86_64.iso
+  build/iso-out/noga-<fecha>-x86_64.iso
+  build/iso-out/noga-nvidia-<fecha>-x86_64.iso
 EOF
 }
 
@@ -123,8 +123,8 @@ mkdir -p -- "$STAGE"
 cp -a -- "$PROFILE/." "$STAGE/"
 
 if [[ "$VARIANT" == nvidia ]]; then
-  sed -i 's|^iso_name=.*|iso_name="nocturne-nvidia"|' "$STAGE/profiledef.sh"
-  sed -i "s|^iso_label=.*|iso_label=\"NOCTURNE_NV_$(date +%Y%m)\"|" "$STAGE/profiledef.sh"
+  sed -i 's|^iso_name=.*|iso_name="noga-nvidia"|' "$STAGE/profiledef.sh"
+  sed -i "s|^iso_label=.*|iso_label=\"NOGA_NV_$(date +%Y%m)\"|" "$STAGE/profiledef.sh"
   sed -i 's|^kernel_params_x86_64=.*|kernel_params_x86_64="nvidia_drm.modeset=1 nvidia_drm.fbdev=1"|' "$STAGE/profiledef.sh"
   sed '/^[[:blank:]]*#/d;/^[[:blank:]]*$/d' "$ISO_DIR/packages/nvidia-live.txt" >>"$STAGE/packages.x86_64"
 fi
@@ -144,7 +144,7 @@ mkdir -p -- "$WORK" "$OUT"
 printf 'Construyendo ISO %s (esto descarga paquetes y tarda)...\n' "$VARIANT"
 mkarchiso -v -w "$WORK" -o "$OUT" "$STAGE" 2>&1 | tee "$BUILD_DIR/iso-$VARIANT.log"
 
-iso_file="$(find "$OUT" -maxdepth 1 -type f -name 'nocturne*.iso' -printf '%T@ %p\n' \
+iso_file="$(find "$OUT" -maxdepth 1 -type f -name 'noga*.iso' -printf '%T@ %p\n' \
   | sort -nr | head -n1 | cut -d' ' -f2-)"
 
 if [[ -z "$iso_file" || ! -f "$iso_file" ]]; then
@@ -153,8 +153,8 @@ if [[ -z "$iso_file" || ! -f "$iso_file" ]]; then
 fi
 
 sha256sum -- "$iso_file" >"$iso_file.sha256"
-ln -sfn -- "$(basename -- "$iso_file")" "$OUT/nocturne-$VARIANT.iso"
+ln -sfn -- "$(basename -- "$iso_file")" "$OUT/noga-$VARIANT.iso"
 
 printf '\nISO lista: %s\n' "$iso_file"
 printf 'SHA256:    %s\n' "$iso_file.sha256"
-printf 'Enlace:    %s\n' "$OUT/nocturne-$VARIANT.iso"
+printf 'Enlace:    %s\n' "$OUT/noga-$VARIANT.iso"

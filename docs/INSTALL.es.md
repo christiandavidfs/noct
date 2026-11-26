@@ -5,10 +5,10 @@
 Esta guía cubre dos cosas:
 
 1. instalar **Noct** en un escritorio Wayland existente;
-2. compilar, arrancar y probar **Nocturne Linux**, la ISO live de referencia.
+2. compilar, arrancar y probar **Noga Linux**, la ISO live de referencia.
 
 Si solo quieres la capa de integración, empieza por [Noct](#noct). Si quieres el escritorio
-completo, salta a [Nocturne Linux](#nocturne-linux).
+completo, salta a [Noga Linux](#noga-linux).
 
 ---
 
@@ -99,7 +99,7 @@ polkit para usuarios del grupo `wheel` (sesión local activa). Se puede desactiv
 Si `noctalia-greeter` está instalado, el instalador pone `hide_logo = true` en
 `/var/lib/noctalia-greeter/greeter.toml`, así que el búho de Noctalia no aparece en el
 login. Se aplica la próxima vez que arranque el greeter. Usa `--keep-greeter-logo`
-para conservarlo. El greeter no forma parte de la ISO live de Nocturne, que entra
+para conservarlo. El greeter no forma parte de la ISO live de Noga, que entra
 automáticamente.
 
 ### Notas por distribución
@@ -168,19 +168,21 @@ configuración.
 
 ---
 
-## Nocturne Linux
+## Noga Linux
 
 ### Qué es
 
-Nocturne Linux es una ISO live mínima basada en CachyOS con **Niri + Noctalia + Noct**
-listos para usar. Mantiene los repositorios, el llavero y los nombres de paquetes de
-CachyOS, así que las actualizaciones siguen viniendo de CachyOS. La marca es Nocturne; los
+Noga Linux es una ISO live mínima basada en CachyOS con **Niri + Noctalia + Noct**
+listos para usar.
+La sesión de escritorio es **Rakia**, una configuración de Niri + Noctalia + Noct pensada
+para el scroll infinito y el espacio infinito. Aparece como `rakia.desktop` en los gestores de sesión. Mantiene los repositorios, el llavero y los nombres de paquetes de
+CachyOS, así que las actualizaciones siguen viniendo de CachyOS. La marca es Noga; los
 paquetes no se renombran ni se recompilan.
 
 Estado actual:
 
 - **la ISO live funciona** en BIOS (syslinux) y UEFI (systemd-boot);
-- autologin a Niri + Noctalia con el usuario `nocturne`;
+- autologin a Niri + Noctalia con el usuario `noga`;
 - edición **slim** para Intel/AMD y edición **NVIDIA** con `nvidia-open`;
 - **el instalador gráfico (Calamares) es el siguiente paso**. La ISO actual es un entorno
   live, todavía no un instalador completo.
@@ -190,12 +192,10 @@ Estado actual:
 
 ### Descarga
 
-Las ISOs precompiladas se publican en
-[GitHub Releases](https://github.com/christiandavidfs/noct/releases). La vista previa live
-actual es
-[nocturne-2026.11-live](https://github.com/christiandavidfs/noct/releases/tag/nocturne-2026.11-live).
-Es solo un entorno live; el instalador es el siguiente hito. También puedes compilarla desde
-fuente con los pasos de abajo.
+Las ISOs precompiladas se publicarán en
+[GitHub Releases](https://github.com/christiandavidfs/noct/releases). La primera vista previa
+de Noga se publicará tras la pasada de branding; la vista previa anterior de Nocturne queda
+como histórica. También puedes compilarla desde fuente con los pasos de abajo.
 
 ### Requisitos de compilación
 
@@ -236,10 +236,10 @@ sudo ./iso/build.sh --nvidia
 Salida:
 
 ```text
-build/iso-out/nocturne-AAAA.MM.DD-x86_64.iso
-build/iso-out/nocturne-nvidia-AAAA.MM.DD-x86_64.iso
-build/iso-out/nocturne-slim.iso       # enlace a la última build slim
-build/iso-out/nocturne-nvidia.iso     # enlace a la última build NVIDIA
+build/iso-out/noga-AAAA.MM.DD-x86_64.iso
+build/iso-out/noga-nvidia-AAAA.MM.DD-x86_64.iso
+build/iso-out/noga-slim.iso       # enlace a la última build slim
+build/iso-out/noga-nvidia.iso     # enlace a la última build NVIDIA
 ```
 
 Cada ISO genera un archivo `.sha256`. El log de compilación queda en
@@ -249,7 +249,7 @@ Cada ISO genera un archivo `.sha256`. El log de compilación queda en
 
 ```bash
 # Sustituye /dev/sdX por el dispositivo USB, NO por una partición
-sudo dd if=build/iso-out/nocturne-slim.iso of=/dev/sdX bs=4M status=progress oflag=sync
+sudo dd if=build/iso-out/noga-slim.iso of=/dev/sdX bs=4M status=progress oflag=sync
 sync
 ```
 
@@ -259,7 +259,7 @@ desde medio óptico.
 ### Arranque
 
 - **UEFI**: elige el USB en el menú de arranque del firmware. El menú de systemd-boot
-  muestra *Nocturne Linux (UEFI)* y *Nocturne Linux (modo seguro)*.
+  muestra *Noga Linux (UEFI)* y *Noga Linux (modo seguro)*.
 - **BIOS/CSM**: el menú de syslinux muestra las mismas opciones más *Arrancar sistema
   existente*, *Reiniciar* y *Apagar*.
 
@@ -270,7 +270,7 @@ firma el kernel y el bootloader con `sbctl` o usa un shim; queda fuera del alcan
 
 | | |
 | --- | --- |
-| Usuario | `nocturne` (autologin, sin contraseña) |
+| Usuario | `noga` (autologin, sin contraseña) |
 | Sudo | sin contraseña en la sesión live |
 | Consola de rescate | `Ctrl+Alt+F2`, login `root` (sin contraseña) |
 | Terminal | `Mod+Return` (foot) |
@@ -317,11 +317,11 @@ instalador gráfico con:
 - selección de disco y cifrado;
 - creación de usuario;
 - idioma y teclado;
-- grupos de paquetes de Nocturne (`noct-base`, `noct-desktop`, `noct-tools`, `noct-nvidia`,
+- grupos de paquetes de Noga (`noct-base`, `noct-desktop`, `noct-tools`, `noct-nvidia`,
   `noct-gaming`, `noct-dev`, `noct-office`);
 - instalación del bootloader (systemd-boot o GRUB).
 
-Hasta entonces, usa la sesión live para evaluar Nocturne y Noct. La ruta de instalación en
+Hasta entonces, usa la sesión live para evaluar Noga y Noct. La ruta de instalación en
 disco se documentará aquí en cuanto el instalador sea probable.
 
 ### Probar en QEMU
@@ -339,7 +339,7 @@ qemu-system-x86_64 \
   -device virtio-vga-gl -display gtk,gl=on \
   -drive if=pflash,format=raw,readonly=on,file=/usr/share/edk2/x64/OVMF_CODE.4m.fd \
   -drive if=pflash,format=raw,file=/tmp/OVMF_VARS.fd \
-  -drive file=build/iso-out/nocturne-slim.iso,media=cdrom,readonly=on \
+  -drive file=build/iso-out/noga-slim.iso,media=cdrom,readonly=on \
   -boot order=d
 ```
 

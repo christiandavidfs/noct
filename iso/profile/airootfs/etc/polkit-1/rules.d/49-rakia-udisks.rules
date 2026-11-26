@@ -1,4 +1,4 @@
-// Nocturne Linux — permite montar y expulsar dispositivos extraíbles
+// Rakia desktop — permite montar y expulsar dispositivos extraíbles
 // a usuarios de wheel en la sesión local activa.
 polkit.addRule(function(action, subject) {
     var allowed = [

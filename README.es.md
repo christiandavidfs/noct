@@ -6,7 +6,7 @@ Noct es una capa de integración para **[Noctalia](https://github.com/noctalia-d
 
 Noct no es un fork del compositor. Gestiona instalaciones existentes de Noctalia/Umbriel mediante comandos pequeños e idempotentes y fragmentos de configuración propios.
 
-**[Nocturne Linux](docs/INSTALL.es.md#nocturne-linux)** es la distribución de referencia construida sobre Noct: CachyOS + Niri + Noctalia, con Noct ya configurado.
+**[Noga Linux](docs/INSTALL.es.md#noga-linux)** es la distribución de referencia construida sobre Noct: CachyOS + Niri + Noctalia, con Noct ya configurado. Incluye el **escritorio Rakia**, una configuración de Niri + Noctalia + Noct pensada para el scroll infinito y el espacio infinito; `rakia.desktop` lo selecciona en los gestores de sesión.
 
 ## Qué incluye
 
@@ -221,9 +221,11 @@ El directorio `android/` contiene un lanzador Jetpack Compose:
 
 Ejecuta `noct sync serve` en el escritorio e introduce la URL y el token en la pantalla **Sync** del lanzador.
 
-## Nocturne Linux
+## Noga Linux
 
-**Nocturne Linux** es la distribución de referencia de Noct: una ISO live mínima basada en CachyOS con Niri, Noctalia y Noct ya configurados. Mantiene los repositorios, el llavero y los nombres de paquetes de CachyOS, así que las actualizaciones siguen viniendo de CachyOS.
+**Noga Linux** es la distribución de referencia de Noct: una ISO live mínima basada en CachyOS con Niri, Noctalia y Noct ya configurados. Mantiene los repositorios, el llavero y los nombres de paquetes de CachyOS, así que las actualizaciones siguen viniendo de CachyOS.
+
+El **escritorio Rakia** es la configuración de Niri + Noctalia + Noct que incluye: mosaico desplazable, espacio infinito y la capa de temas de Noct. La sesión se publica como `rakia.desktop`.
 
 Estado actual:
 
@@ -232,8 +234,8 @@ Estado actual:
 - el instalador gráfico (Calamares) es el siguiente paso; la ISO actual es un entorno live;
 - el plugin de efectos de Noct está incluido en la imagen live y se instala con `noct effects widget`.
 
-Instrucciones de compilación, grabación y prueba: **[docs/INSTALL.es.md#nocturne-linux](docs/INSTALL.es.md#nocturne-linux)** · **[English](docs/INSTALL.md#nocturne-linux)**.
-Descarga la vista previa live actual: **[nocturne-2026.11-live](https://github.com/christiandavidfs/noct/releases/tag/nocturne-2026.11-live)**.
+Instrucciones de compilación, grabación y prueba: **[docs/INSTALL.es.md#noga-linux](docs/INSTALL.es.md#noga-linux)** · **[English](docs/INSTALL.md#noga-linux)**.
+La primera vista previa de Noga se publicará en [GitHub Releases](https://github.com/christiandavidfs/noct/releases) tras la pasada de branding. La vista previa anterior de Nocturne queda como build histórica.
 
 ## Documentación
 

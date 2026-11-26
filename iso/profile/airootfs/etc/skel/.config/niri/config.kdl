@@ -1,6 +1,6 @@
-// Nocturne Linux — configuración de Niri para la sesión live.
+// Noga Linux — configuración de Niri para la sesión live.
 // Un solo archivo para que el live no dependa de rutas de ~/.config/niri/cfg.
-// Tras instalar, Nocturne reemplaza esto por la configuración completa.
+// Tras instalar, Noga reemplaza esto por la configuración completa.
 
 input {
     keyboard {
@@ -99,7 +99,6 @@ animations {
 }
 
 spawn-at-startup "noctalia"
-spawn-at-startup "udiskie" "--automount" "--notify"
 
 window-rule {
     geometry-corner-radius 20

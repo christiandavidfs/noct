@@ -1,6 +1,6 @@
-NAME="Nocturne Linux"
-PRETTY_NAME="Nocturne Linux"
-ID=nocturne
+NAME="Noga Linux"
+PRETTY_NAME="Noga Linux"
+ID=noga
 ID_LIKE="arch cachyos"
 BUILD_ID=rolling
 ANSI_COLOR="38;2;124;255;178"
@@ -8,4 +8,4 @@ HOME_URL="https://github.com/christiandavidfs/noct"
 DOCUMENTATION_URL="https://github.com/christiandavidfs/noct#readme"
 SUPPORT_URL="https://github.com/christiandavidfs/noct/issues"
 BUG_REPORT_URL="https://github.com/christiandavidfs/noct/issues"
-LOGO=nocturne
+LOGO=noga

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Lanza el instalador de Nocturne desde la sesión live.
+# Lanza el instalador de Noga desde la sesión live.
 # La sesión de Niri no siempre exporta WAYLAND_DISPLAY/DBUS a los hijos;
 # se completan aquí para que Calamares arranque en Wayland con bus de sesión.
 XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"

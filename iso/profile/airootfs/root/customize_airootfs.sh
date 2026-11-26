@@ -9,12 +9,12 @@ systemd-sysusers
 
 # Usuario live. El passwd viene en airootfs para que mkarchiso copie /etc/skel;
 # aquí solo se completa la pertenencia a los grupos de hardware.
-if id -u nocturne >/dev/null 2>&1; then
-  usermod -aG wheel,video,render,input,audio,storage,power,rfkill nocturne
+if id -u noga >/dev/null 2>&1; then
+  usermod -aG wheel,video,render,input,audio,storage,power,rfkill noga
 else
-  useradd -m -u 1000 -g 1000 -G wheel,video,render,input,audio,storage,power,rfkill -s /bin/bash nocturne
+  useradd -m -u 1000 -g 1000 -G wheel,video,render,input,audio,storage,power,rfkill -s /bin/bash noga
 fi
-chown -hR 1000:1000 /home/nocturne
+chown -hR 1000:1000 /home/noga
 
 # Locales del live.
 sed -i \
@@ -27,7 +27,7 @@ locale-gen
 passwd -d root >/dev/null 2>&1 || true
 
 # Identidad de la ISO.
-printf 'Nocturne Linux \\r (\\l)\n' >/etc/issue
+printf 'Noga Linux \\r (\\l)\n' >/etc/issue
 
 # machine-id vacío: systemd genera uno nuevo en cada arranque live.
 : >/etc/machine-id
@@ -36,14 +36,14 @@ printf 'Nocturne Linux \\r (\\l)\n' >/etc/issue
 find /etc -maxdepth 2 -name '*.pacnew' -delete
 
 # Permisos del sudoers live (también los fija profiledef.sh).
-chmod 0440 /etc/sudoers.d/10-nocturne-live
+chmod 0440 /etc/sudoers.d/10-noga-live
 
 # ananicy no tiene sentido en el live; en el sistema instalado sí.
 ln -sf /dev/null /etc/systemd/system/ananicy-cpp.service
 
-# Fondo por defecto de Nocturne (sin el búho de Noctalia).
-if [ -f /usr/share/nocturne/wallpapers/nocturne.png ]; then
-  install -Dm644 /usr/share/nocturne/wallpapers/nocturne.png \
+# Fondo por defecto de Noga (sin el búho de Noctalia).
+if [ -f /usr/share/rakia/wallpapers/black.png ]; then
+  install -Dm644 /usr/share/rakia/wallpapers/black.png \
     /usr/share/noctalia/assets/noctalia-wallpaper.png
 fi
 
@@ -53,9 +53,9 @@ if [ -f /etc/calamares/settings-noct.conf ]; then
 fi
 ln -sfn /usr/share/calamares/qml /etc/calamares/qml
 
-# Nombre de Nocturne en el menú de GRUB del sistema instalado.
+# Nombre de Noga en el menú de GRUB del sistema instalado.
 if [ -f /etc/default/grub ]; then
-  sed -i 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="Nocturne"/' /etc/default/grub
+  sed -i 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="Noga"/' /etc/default/grub
 fi
 
 # Punto de montaje del llavero temporal. Se deja creado (vacío) para que

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Rakia
+Comment=Niri + Noctalia desktop with infinite scroll
+Exec=niri-session
+Type=Application
+DesktopNames=niri

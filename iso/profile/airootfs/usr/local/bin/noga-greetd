@@ -3,7 +3,7 @@
 set -eu
 
 user="$(awk -F: '$3 >= 1000 && $3 < 60000 {print $1; exit}' /etc/passwd)"
-[ -n "$user" ] || user="noct"
+[ -n "$user" ] || user="noga"
 
 cat > /etc/greetd/config.toml <<EOF
 [terminal]
