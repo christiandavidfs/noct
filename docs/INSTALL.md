@@ -167,6 +167,12 @@ Current status:
 > Do not install the current pre-release ISO over a disk you care about. Use a virtual
 > machine or a spare disk until the installer milestone is published.
 
+### Download
+
+Prebuilt ISOs will be published under
+[GitHub Releases](https://github.com/christiandavidfs/noct/releases). There is no public ISO
+yet: until the installer milestone, build from source with the steps below.
+
 ### Build requirements
 
 Build on CachyOS (recommended) or on an Arch system with the CachyOS repositories and
@@ -323,10 +329,6 @@ line.
 ### Known limitations of the current pre-release
 
 - No graphical installer yet (Calamares is the next milestone).
-- The live image does not include `xwayland-satellite` or `wireless-regdb` yet; X11 apps and
-  the full Wi-Fi regulatory database will arrive in the next build.
-- The `noct` binary in the first ISO needs the executable bit; it is fixed in the profile
-  and will be correct in the next build.
 - The ISO is unsigned; Secure Boot must be disabled.
 
 ---

@@ -168,6 +168,12 @@ Estado actual:
 > No instales la ISO pre-release actual sobre un disco que te importe. Usa una máquina
 > virtual o un disco de repuesto hasta que se publique el hito del instalador.
 
+### Descarga
+
+Las ISOs precompiladas se publicarán en
+[GitHub Releases](https://github.com/christiandavidfs/noct/releases). Todavía no hay ISO
+pública: hasta el hito del instalador, compílala desde fuente con los pasos de abajo.
+
 ### Requisitos de compilación
 
 Compila en CachyOS (recomendado) o en un Arch con los repositorios de CachyOS y
@@ -326,10 +332,6 @@ del kernel.
 ### Limitaciones conocidas de la pre-release actual
 
 - Todavía no hay instalador gráfico (Calamares es el siguiente hito).
-- La imagen live aún no incluye `xwayland-satellite` ni `wireless-regdb`; las apps X11 y la
-  base regulatoria completa de Wi-Fi llegarán en la próxima build.
-- El binario `noct` de la primera ISO necesita el bit de ejecución; ya está corregido en el
-  perfil y será correcto en la próxima build.
 - La ISO no está firmada; Secure Boot debe estar desactivado.
 
 ---

@@ -47,6 +47,7 @@ iproute2
 iputils
 bluez
 bluez-utils
+wireless-regdb
 
 # Desktop
 niri
@@ -70,6 +71,8 @@ xdg-desktop-portal-gtk
 xdg-desktop-portal-wlr
 xdg-utils
 xdg-user-dirs
+xwayland-satellite
+xorg-xwayland
 ttf-dejavu
 noto-fonts-emoji
 wl-clipboard
