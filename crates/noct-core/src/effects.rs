@@ -1421,6 +1421,10 @@ pub fn install_widget() -> Result<WidgetReport> {
             .with_context(|| format!("no se pudo escribir {}", state_file.display()))?;
     }
 
+    // Noctalia solo descubre plugins locales nuevos cuando se activan por IPC.
+    // Si Noctalia no está corriendo, el estado queda escrito para el próximo arranque.
+    let _ = env::run("noctalia", &["msg", "plugins", "enable", "noct/effects"]);
+
     let (shortcut_added, settings_file) = ensure_control_center_shortcut()?;
     if shortcut_added {
         let _ = env::run("noctalia", &["msg", "config-reload"]);

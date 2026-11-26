@@ -1,8 +1,30 @@
 # Noct
 
+**English** · [Español](README.es.md)
+
 Noct is an integration layer for **[Noctalia](https://github.com/noctalia-dev/noctalia)** and **[Umbriel](https://github.com/noctalia-dev/umbriel)**. It keeps themes, wallpapers, keybinds, effects and extra configuration in sync, and adds a matching Android launcher.
 
 Noct is not a compositor fork. It manages existing Noctalia/Umbriel installations through small, idempotent commands and managed config fragments.
+
+**[Nocturne Linux](docs/INSTALL.md#nocturne-linux)** is the reference distribution built on top of it: CachyOS + Niri + Noctalia, with Noct preconfigured.
+
+## Gallery
+
+![Nocturne Linux desktop](docs/screenshots/desktop.png)
+
+| Noct Effects | Mix effects |
+|:---:|:---:|
+| ![Noct Effects panel](docs/screenshots/effects.png) | ![Per-slot effect mixing](docs/screenshots/effects-mix.png) |
+
+| Launcher | Control center |
+|:---:|:---:|
+| ![Noctalia launcher](docs/screenshots/launcher.png) | ![Noctalia control center with the Noct Effects tile](docs/screenshots/control-center.png) |
+
+| Terminal with the `noct` CLI | Noctalia settings |
+|:---:|:---:|
+| ![Foot terminal running noct --help](docs/screenshots/terminal.png) | ![Noctalia settings](docs/screenshots/settings.png) |
+
+More screenshots and installation guides: [English](docs/INSTALL.md) · [Español](docs/INSTALL.es.md).
 
 ## What it includes
 
@@ -22,6 +44,8 @@ Noct is not a compositor fork. It manages existing Noctalia/Umbriel installation
 - A running Noctalia session for runtime commands such as `noctalia msg ...`.
 
 ## Install
+
+Full guide: **[docs/INSTALL.md](docs/INSTALL.md)** · **[Español](docs/INSTALL.es.md)**.
 
 ```bash
 git clone https://github.com/christiandavidfs/noct.git
@@ -122,7 +146,7 @@ It includes:
 - Mono tint and intensity controls;
 - English and Spanish translations (`translations/en.json`, `translations/es.json`).
 
-## Screenshots
+## Screen capture keybinds
 
 Noctalia’s screenshot configuration lives in `~/.local/state/noctalia/settings.toml` under `[shell.screenshot]`.
 
@@ -203,6 +227,25 @@ The `android/` directory contains a Jetpack Compose launcher:
 - settings and theme/wallpaper sync.
 
 Run `noct sync serve` on the desktop and enter the URL + token in the launcher’s **Sync** screen.
+
+## Nocturne Linux
+
+**Nocturne Linux** is the reference distribution for Noct: a minimal CachyOS-based live ISO with Niri, Noctalia and Noct preconfigured. It keeps CachyOS repositories, keyring and package names, so updates continue to come from CachyOS.
+
+Current status:
+
+- live ISO boots on BIOS (syslinux) and UEFI (systemd-boot), with autologin into Niri + Noctalia;
+- slim and NVIDIA editions are generated from the same profile;
+- the graphical installer (Calamares) is the next milestone; the current ISO is a live environment;
+- Noct’s effects plugin is included in the live image and can be installed with `noct effects widget`.
+
+Build, burn and test instructions: **[docs/INSTALL.md#nocturne-linux](docs/INSTALL.md#nocturne-linux)** · **[Español](docs/INSTALL.es.md#nocturne-linux)**.
+
+## Documentation
+
+- [Installation guide (English)](docs/INSTALL.md)
+- [Guía de instalación (Español)](docs/INSTALL.es.md)
+- [README en español](README.es.md)
 
 ## Development
 
