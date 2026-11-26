@@ -78,6 +78,7 @@ Umbriel, estado del plugin) y puede reparar algunas con `noct doctor --fix`.
 | `--no-noctalia` | No instala/actualiza Noctalia |
 | `--no-umbriel` | No instala/actualiza Umbriel |
 | `--no-udisks` | No configura el montaje automático de USB |
+| `--keep-greeter-logo` | Conserva el logo del greeter de Noctalia (oculto por defecto) |
 | `--from-source` | Compila Noctalia y Umbriel desde fuente |
 | `--wallpaper fixed\|bing-daily` | Modo de fondo |
 | `--wallpaper-path RUTA` | Fondo fijo que aplicar |
@@ -92,6 +93,14 @@ El instalador configura `udisks2` + `udiskie` con un servicio de usuario, así q
 USB y SSD externos se detectan y montan en `/run/media/$USER`. También añade una regla
 polkit para usuarios del grupo `wheel` (sesión local activa). Se puede desactivar con
 `--no-udisks`.
+
+### Greeter
+
+Si `noctalia-greeter` está instalado, el instalador pone `hide_logo = true` en
+`/var/lib/noctalia-greeter/greeter.toml`, así que el búho de Noctalia no aparece en el
+login. Se aplica la próxima vez que arranque el greeter. Usa `--keep-greeter-logo`
+para conservarlo. El greeter no forma parte de la ISO live de Nocturne, que entra
+automáticamente.
 
 ### Notas por distribución
 

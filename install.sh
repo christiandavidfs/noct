@@ -43,6 +43,7 @@ FROM_SOURCE=0
 MIGRATE=1
 WITH_GREETER=0
 WITH_UDISKS=1
+HIDE_GREETER_LOGO=1
 DEBIAN_REPO_READY=0
 SUSE_REPO_READY=0
 WALLPAPER_MODE=""
@@ -91,6 +92,7 @@ Opciones:
   --no-noctalia             No instala/actualiza Noctalia
   --no-umbriel              No instala/actualiza Umbriel
   --no-udisks               No configura el montaje automático de USB
+  --keep-greeter-logo       No oculta el logo del greeter de Noctalia
   --from-source             Fuerza compilación de Noctalia y Umbriel
   --wallpaper fixed|bing-daily
   --wallpaper-path RUTA     Wallpaper fijo a aplicar
@@ -104,6 +106,9 @@ El modo wallpaper es explícito:
 
 El montaje de USB y discos externos usa udisks2 + udiskie. Se configura un
 servicio de usuario para que arranque con la sesión. --no-udisks lo omite.
+
+Si noctalia-greeter está instalado, se oculta su logo en el login. Usa
+--keep-greeter-logo para conservarlo.
 EOF
   else
     cat <<'EOF'
@@ -123,6 +128,7 @@ Options:
   --no-noctalia             Do not install/update Noctalia
   --no-umbriel              Do not install/update Umbriel
   --no-udisks               Do not configure automatic USB mounting
+  --keep-greeter-logo       Keep the Noctalia greeter logo
   --from-source             Force Noctalia and Umbriel source builds
   --wallpaper fixed|bing-daily
   --wallpaper-path PATH     Fixed wallpaper to apply
@@ -136,6 +142,9 @@ Wallpaper modes are explicit:
 
 USB sticks and external drives use udisks2 + udiskie. A user service starts
 the automounter with the session. --no-udisks skips it.
+
+If noctalia-greeter is installed, its logo is hidden on the login screen by
+default. Use --keep-greeter-logo to keep it.
 EOF
   fi
 }
@@ -188,6 +197,7 @@ while [ $# -gt 0 ]; do
     --no-noctalia) WITH_NOCTALIA=0 ;;
     --no-umbriel) WITH_UMBRIEL=0 ;;
     --no-udisks) WITH_UDISKS=0 ;;
+    --keep-greeter-logo) HIDE_GREETER_LOGO=0 ;;
     --from-source) FROM_SOURCE=1 ;;
     --wallpaper) shift; [ $# -gt 0 ] || die "$(say '--wallpaper needs fixed or bing-daily' '--wallpaper necesita fixed o bing-daily')"; WALLPAPER_MODE="$1" ;;
     --wallpaper-path) shift; [ $# -gt 0 ] || die "$(say '--wallpaper-path needs a path' '--wallpaper-path necesita una ruta')"; WALLPAPER_PATH="$1" ;;
@@ -863,6 +873,59 @@ EOF
     warn "$(say 'could not start the noct-udiskie user service' 'no se pudo iniciar el servicio de usuario noct-udiskie')"
 }
 
+configure_greeter_logo() {
+  [ "$HIDE_GREETER_LOGO" -eq 1 ] || return 0
+  need_cmd noctalia-greeter || return 0
+  if [ "$USER_ONLY" -eq 1 ] || [ "$NO_SYSTEM" -eq 1 ]; then
+    log "$(say 'Skipping the greeter logo (--user or --no-system)' 'Se omite el logo del greeter (--user o --no-system)')"
+    return 0
+  fi
+  local home cfg tmp
+  home="$(getent passwd greeter 2>/dev/null | cut -d: -f6)"
+  [ -n "$home" ] && [ -d "$home" ] || return 0
+  cfg="$home/greeter.toml"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    log "$(say 'Would hide the Noctalia greeter logo' 'Ocultaría el logo del greeter de Noctalia')"
+    return 0
+  fi
+
+  tmp="$(mktemp)"
+  if [ -f "$cfg" ]; then
+    as_root cp "$cfg" "$tmp"
+    as_root chown "$(id -u):$(id -g)" "$tmp"
+  else
+    printf '[appearance]\nhide_logo = true\n' > "$tmp"
+  fi
+
+  if need_cmd python3; then
+    python3 - "$tmp" <<'PY'
+import re
+import sys
+
+path = sys.argv[1]
+text = open(path).read()
+if re.search(r'(?m)^\s*hide_logo\s*=', text):
+    text = re.sub(r'(?m)^\s*hide_logo\s*=.*$', 'hide_logo = true', text, count=1)
+elif re.search(r'(?m)^\[appearance\]\s*$', text):
+    text = re.sub(r'(?m)^(\[appearance\]\s*)$', r'\1\nhide_logo = true', text, count=1)
+else:
+    if text and not text.endswith('\n'):
+        text += '\n'
+    text += '\n[appearance]\nhide_logo = true\n'
+open(path, 'w').write(text)
+PY
+  else
+    printf '\n[appearance]\nhide_logo = true\n' >> "$tmp"
+  fi
+
+  if as_root install -o greeter -g greeter -m 0644 "$tmp" "$cfg"; then
+    log "$(say 'Noctalia greeter logo hidden' 'Logo del greeter de Noctalia oculto')"
+  else
+    warn "$(say 'could not update %s' 'no se pudo actualizar %s' "$cfg")"
+  fi
+  rm -f "$tmp"
+}
+
 configure_noct() {
   log "$(say 'Configuring Noct' 'Configuración de Noct')"
   ensure_umbriel_config
@@ -901,6 +964,7 @@ fi
 
 install_noct
 install_removable_drives
+configure_greeter_logo
 configure_noct
 
 log "$(say 'Done.' 'Listo.')"

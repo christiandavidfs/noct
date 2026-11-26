@@ -78,6 +78,7 @@ state) and can repair some of them with `noct doctor --fix`.
 | `--no-noctalia` | Do not install/update Noctalia |
 | `--no-umbriel` | Do not install/update Umbriel |
 | `--no-udisks` | Skip automatic USB/removable drive mounting |
+| `--keep-greeter-logo` | Keep the Noctalia greeter logo (hidden by default) |
 | `--from-source` | Build Noctalia and Umbriel from source |
 | `--wallpaper fixed\|bing-daily` | Wallpaper mode |
 | `--wallpaper-path PATH` | Fixed wallpaper to apply |
@@ -92,6 +93,14 @@ The installer sets up `udisks2` + `udiskie` with a user service, so USB sticks a
 external SSDs are detected and mounted under `/run/media/$USER`. It also adds a
 polkit rule for users in the `wheel` group (local, active session). Disable it with
 `--no-udisks`.
+
+### Greeter
+
+If `noctalia-greeter` is installed, the installer sets `hide_logo = true` in
+`/var/lib/noctalia-greeter/greeter.toml`, so the Noctalia owl does not appear on the
+login screen. It applies the next time the greeter starts. Use
+`--keep-greeter-logo` to keep it. The greeter is not part of the live Nocturne
+ISO, which logs in automatically.
 
 ### Distribution notes
 

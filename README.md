@@ -76,6 +76,7 @@ Then log out and log back in, selecting **Umbriel** as the session.
 | `--no-noctalia` | Do not install/update Noctalia |
 | `--no-umbriel` | Do not install/update Umbriel |
 | `--no-udisks` | Skip automatic USB/removable drive mounting |
+| `--keep-greeter-logo` | Keep the Noctalia greeter logo (hidden by default) |
 | `--from-source` | Build Noctalia and Umbriel from source |
 | `--wallpaper fixed\|bing-daily` | Wallpaper mode |
 | `--wallpaper-path PATH` | Fixed wallpaper to apply |
@@ -84,7 +85,9 @@ Then log out and log back in, selecting **Umbriel** as the session.
 
 The installer is bilingual: it follows the system locale and also accepts
 `--lang en` or `--lang es`. It installs `udisks2` + `udiskie` with a user service so
-USB sticks and external SSDs mount automatically; use `--no-udisks` to skip that.
+USB sticks and external SSDs mount automatically; use `--no-udisks` to skip that. If
+`noctalia-greeter` is installed, its logo is hidden on the login screen by default;
+`--keep-greeter-logo` keeps it.
 
 ### Distribution notes
 
