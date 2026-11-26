@@ -37,6 +37,4 @@ style:
     SidebarBackgroundCurrent: "#7cffb2"
 
 slideshow:
-    - "/etc/calamares/branding/nocturne/slide1.png"
-    - "/etc/calamares/branding/nocturne/slide2.png"
-    - "/etc/calamares/branding/nocturne/slide3.png"
+    - "/etc/calamares/branding/nocturne/wallpaper-slide.png"

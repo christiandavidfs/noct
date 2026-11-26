@@ -1,3 +1,18 @@
 #!/bin/sh
 # Lanza el instalador de Nocturne desde la sesión live.
-exec sudo -E calamares -c /etc/calamares/settings-noct.conf "$@"
+# La sesión de Niri no siempre exporta WAYLAND_DISPLAY/DBUS a los hijos;
+# se completan aquí para que Calamares arranque en Wayland con bus de sesión.
+XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
+DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
+QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-wayland}"
+XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP:-niri}"
+export XDG_RUNTIME_DIR WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS QT_QPA_PLATFORM XDG_CURRENT_DESKTOP
+
+exec sudo env \
+  XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+  WAYLAND_DISPLAY="$WAYLAND_DISPLAY" \
+  DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" \
+  QT_QPA_PLATFORM="$QT_QPA_PLATFORM" \
+  XDG_CURRENT_DESKTOP="$XDG_CURRENT_DESKTOP" \
+  calamares -c /etc/calamares/settings-noct.conf "$@"
