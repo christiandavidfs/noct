@@ -7,12 +7,14 @@
 # Opciones:
 #   --dry-run                 Muestra los comandos sin ejecutarlos
 #   --yes                     No pregunta nada
+#   --lang en|es              Idioma de la salida (por defecto: locale)
 #   --user                    Instala todo en ~/.local (sin sudo para Noctalia/Umbriel)
 #   --prefix RUTA             Prefijo de Noct (por defecto ~/.local)
 #   --system-prefix RUTA      Prefijo de Noctalia/Umbriel (por defecto /usr/local)
 #   --no-system               No instala dependencias del sistema
 #   --no-noctalia             No instala/actualiza Noctalia
 #   --no-umbriel              No instala/actualiza Umbriel
+#   --no-udisks               No configura el montaje automático de USB
 #   --from-source             Fuerza compilación de Noctalia y Umbriel
 #   --wallpaper fixed|bing-daily
 #   --wallpaper-path RUTA     Wallpaper fijo a aplicar
@@ -40,13 +42,39 @@ WITH_UMBRIEL=1
 FROM_SOURCE=0
 MIGRATE=1
 WITH_GREETER=0
+WITH_UDISKS=1
 DEBIAN_REPO_READY=0
 SUSE_REPO_READY=0
 WALLPAPER_MODE=""
 WALLPAPER_PATH=""
 
+# Idioma de la interfaz: --lang, NOCT_LANG o el locale del sistema.
+LANG_MODE="${NOCT_LANG:-}"
+if [ -z "$LANG_MODE" ]; then
+  case "${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}" in
+    es*) LANG_MODE=es ;;
+    *) LANG_MODE=en ;;
+  esac
+fi
+case "$LANG_MODE" in
+  en|es) ;;
+  *) printf 'error: --lang must be en or es / --lang debe ser en o es\n' >&2; exit 2 ;;
+esac
+
+# say "English" "Español" [args...] — imprime el texto en el idioma activo.
+say() {
+  local en="$1" es="$2"
+  shift 2
+  if [ "$LANG_MODE" = es ]; then
+    printf "$es" "$@"
+  else
+    printf "$en" "$@"
+  fi
+}
+
 usage() {
-  cat <<'EOF'
+  if [ "$LANG_MODE" = es ]; then
+    cat <<'EOF'
 Instalador de Noct: Noctalia + Umbriel + Noct + plugin + configuración.
 
 Uso:
@@ -55,12 +83,14 @@ Uso:
 Opciones:
   --dry-run                 Muestra los comandos sin ejecutarlos
   --yes                     No pregunta nada
+  --lang en|es              Idioma de la salida (por defecto: locale)
   --user                    Instala todo en ~/.local (sin sudo para Noctalia/Umbriel)
   --prefix RUTA             Prefijo de Noct (por defecto ~/.local)
   --system-prefix RUTA      Prefijo de Noctalia/Umbriel (por defecto /usr/local)
   --no-system               No instala dependencias del sistema
   --no-noctalia             No instala/actualiza Noctalia
   --no-umbriel              No instala/actualiza Umbriel
+  --no-udisks               No configura el montaje automático de USB
   --from-source             Fuerza compilación de Noctalia y Umbriel
   --wallpaper fixed|bing-daily
   --wallpaper-path RUTA     Wallpaper fijo a aplicar
@@ -71,12 +101,48 @@ Opciones:
 El modo wallpaper es explícito:
   fixed       deja el fondo elegido y desactiva el actualizador de Bing
   bing-daily  actualiza Bing cada día y sincroniza escritorio + greeter
+
+El montaje de USB y discos externos usa udisks2 + udiskie. Se configura un
+servicio de usuario para que arranque con la sesión. --no-udisks lo omite.
 EOF
+  else
+    cat <<'EOF'
+Noct installer: Noctalia + Umbriel + Noct + plugin + configuration.
+
+Usage:
+  ./install.sh [options]
+
+Options:
+  --dry-run                 Print commands without running them
+  --yes                     Do not ask for confirmation
+  --lang en|es              Output language (default: system locale)
+  --user                    Install everything under ~/.local (no sudo for Noctalia/Umbriel)
+  --prefix PATH             Noct install prefix (default ~/.local)
+  --system-prefix PATH      Noctalia/Umbriel prefix (default /usr/local)
+  --no-system               Skip system dependency installation
+  --no-noctalia             Do not install/update Noctalia
+  --no-umbriel              Do not install/update Umbriel
+  --no-udisks               Do not configure automatic USB mounting
+  --from-source             Force Noctalia and Umbriel source builds
+  --wallpaper fixed|bing-daily
+  --wallpaper-path PATH     Fixed wallpaper to apply
+  --with-greeter            Install noctalia-greeter (does not configure greetd)
+  --no-migrate              Do not migrate old Umbriel keybind syntax
+  -h, --help
+
+Wallpaper modes are explicit:
+  fixed       keep the chosen wallpaper and disable the Bing updater
+  bing-daily  update Bing every day and sync desktop + greeter
+
+USB sticks and external drives use udisks2 + udiskie. A user service starts
+the automounter with the session. --no-udisks skips it.
+EOF
+  fi
 }
 
 log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
-warn() { printf '\033[1;33mwarning:\033[0m %s\n' "$*" >&2; }
-die() { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+warn() { printf '\033[1;33m%s:\033[0m %s\n' "$(say warning aviso)" "$*" >&2; }
+die() { printf '\033[1;31m%s:\033[0m %s\n' "$(say error error)" "$*" >&2; exit 1; }
 
 run() {
   if [ "$DRY_RUN" -eq 1 ]; then
@@ -100,7 +166,7 @@ as_root() {
   if [ "$(id -u)" -eq 0 ]; then
     run "$@"
   elif [ "$USER_ONLY" -eq 1 ]; then
-    die "esta operación necesita root; quita --user o ejecútala manualmente"
+    die "$(say 'this operation needs root; drop --user or run it manually' 'esta operación necesita root; quita --user o ejecútala manualmente')"
   else
     run sudo "$@"
   fi
@@ -114,26 +180,33 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) DRY_RUN=1 ;;
     --yes|-y) ASSUME_YES=1 ;;
+    --lang) shift; [ $# -gt 0 ] || die "$(say '--lang needs en or es' '--lang necesita en o es')"; LANG_MODE="$1" ;;
     --user) USER_ONLY=1 ;;
-    --prefix) shift; PREFIX="${1:?falta la ruta}" ;;
-    --system-prefix) shift; SYSTEM_PREFIX="${1:?falta la ruta}" ;;
+    --prefix) shift; [ $# -gt 0 ] || die "$(say '--prefix needs a path' '--prefix necesita una ruta')"; PREFIX="$1" ;;
+    --system-prefix) shift; [ $# -gt 0 ] || die "$(say '--system-prefix needs a path' '--system-prefix necesita una ruta')"; SYSTEM_PREFIX="$1" ;;
     --no-system) NO_SYSTEM=1 ;;
     --no-noctalia) WITH_NOCTALIA=0 ;;
     --no-umbriel) WITH_UMBRIEL=0 ;;
+    --no-udisks) WITH_UDISKS=0 ;;
     --from-source) FROM_SOURCE=1 ;;
-    --wallpaper) shift; WALLPAPER_MODE="${1:?falta fixed o bing-daily}" ;;
-    --wallpaper-path) shift; WALLPAPER_PATH="${1:?falta la ruta}" ;;
+    --wallpaper) shift; [ $# -gt 0 ] || die "$(say '--wallpaper needs fixed or bing-daily' '--wallpaper necesita fixed o bing-daily')"; WALLPAPER_MODE="$1" ;;
+    --wallpaper-path) shift; [ $# -gt 0 ] || die "$(say '--wallpaper-path needs a path' '--wallpaper-path necesita una ruta')"; WALLPAPER_PATH="$1" ;;
     --with-greeter) WITH_GREETER=1 ;;
     --no-migrate) MIGRATE=0 ;;
     -h|--help) usage; exit 0 ;;
-    *) die "opción desconocida: $1 (usa --help)" ;;
+    *) die "$(say "unknown option: $1 (use --help)" "opción desconocida: $1 (usa --help)")" ;;
   esac
   shift
 done
 
+case "$LANG_MODE" in
+  en|es) ;;
+  *) die "$(say '--lang must be en or es' '--lang debe ser en o es')" ;;
+esac
+
 case "$WALLPAPER_MODE" in
   ""|fixed|bing-daily) ;;
-  *) die "--wallpaper debe ser fixed o bing-daily" ;;
+  *) die "$(say '--wallpaper must be fixed or bing-daily' '--wallpaper debe ser fixed o bing-daily')" ;;
 esac
 
 # ---------------------------------------------------------------------------
@@ -169,9 +242,9 @@ elif command -v eopkg >/dev/null 2>&1; then PM=eopkg
 else PM=none
 fi
 
-log "Sistema: ${PRETTY_NAME:-$DISTRO_ID} · familia $FAMILY · paquetes $PM"
+log "$(say 'System: %s · family %s · packages %s' 'Sistema: %s · familia %s · paquetes %s' "${PRETTY_NAME:-$DISTRO_ID}" "$FAMILY" "$PM")"
 if [ "$DRY_RUN" -eq 1 ]; then
-  log "Modo dry-run: no se cambiará nada"
+  log "$(say 'Dry-run: nothing will be changed' 'Modo dry-run: no se cambiará nada')"
 fi
 
 pkg_update() {
@@ -188,7 +261,7 @@ pkg_update() {
 }
 
 pkg_install() {
-  [ "$NO_SYSTEM" -eq 1 ] && { warn "dependencias del sistema omitidas (--no-system)"; return 0; }
+  [ "$NO_SYSTEM" -eq 1 ] && { warn "$(say 'system dependencies skipped (--no-system)' 'dependencias del sistema omitidas (--no-system)')"; return 0; }
   case "$PM" in
     pacman) as_root pacman -S --needed --noconfirm "$@" ;;
     apt) as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y "$@" ;;
@@ -197,13 +270,13 @@ pkg_install() {
     apk) as_root apk add "$@" ;;
     xbps) as_root xbps-install -Sy "$@" ;;
     eopkg) as_root eopkg install -y "$@" ;;
-    *) warn "no hay gestor de paquetes conocido; instala a mano: $*"; return 1 ;;
+    *) warn "$(say 'no known package manager; install manually: %s' 'no hay gestor de paquetes conocido; instala a mano: %s' "$*")"; return 1 ;;
   esac
 }
 
 pkg_install_optional() {
   for pkg in "$@"; do
-    pkg_install "$pkg" || warn "no se pudo instalar $pkg"
+    pkg_install "$pkg" || warn "$(say 'could not install %s' 'no se pudo instalar %s' "$pkg")"
   done
 }
 
@@ -212,17 +285,17 @@ ensure_rust() {
     return 0
   fi
   if [ "$DRY_RUN" -eq 1 ]; then
-    log "Instalaría Rust con rustup"
+    log "$(say 'Would install Rust with rustup' 'Instalaría Rust con rustup')"
     return 0
   fi
   pkg_install_optional curl ca-certificates
   if ! need_cmd rustup; then
-    log "Instalando Rust con rustup"
+    log "$(say 'Installing Rust with rustup' 'Instalando Rust con rustup')"
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
   fi
   # shellcheck disable=SC1091
   [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
-  need_cmd cargo || die "cargo no quedó disponible; reinicia la terminal y vuelve a ejecutar"
+  need_cmd cargo || die "$(say 'cargo is not available; restart the terminal and run again' 'cargo no quedó disponible; reinicia la terminal y vuelve a ejecutar')"
 }
 
 # ---------------------------------------------------------------------------
@@ -239,11 +312,11 @@ setup_debian_repo() {
     resolute) src=resolute ;;
     stonking) src=stonking ;;
     *)
-      warn "Debian/Ubuntu '$VERSION_CODENAME' no está en la lista de Noctalia; se omite el repo APT"
+      warn "$(say "Debian/Ubuntu '$VERSION_CODENAME' is not in Noctalia's list; skipping the APT repo" "Debian/Ubuntu '$VERSION_CODENAME' no está en la lista de Noctalia; se omite el repo APT")"
       return 1
       ;;
   esac
-  log "Añadiendo repositorio APT de Noctalia ($src)"
+  log "$(say 'Adding the Noctalia APT repository (%s)' 'Añadiendo repositorio APT de Noctalia (%s)' "$src")"
   pkg_install_optional wget ca-certificates
   run wget -qO /tmp/nickh-archive-keyring.deb https://pkg.noctalia.dev/deb/nickh-archive-keyring.deb
   as_root dpkg -i /tmp/nickh-archive-keyring.deb
@@ -255,7 +328,7 @@ setup_debian_repo() {
 
 add_debian_backports() {
   [ "$NO_SYSTEM" -eq 1 ] && return 0
-  log "Habilitando Debian backports para Umbriel"
+  log "$(say 'Enabling Debian backports for Umbriel' 'Habilitando Debian backports para Umbriel')"
   as_root sh -c 'cat > /etc/apt/sources.list.d/debian-backports.sources <<EOF
 Types: deb
 URIs: http://deb.debian.org/debian
@@ -270,26 +343,36 @@ setup_terra_repo() {
   [ "$NO_SYSTEM" -eq 1 ] && return 0
   local ver
   ver="$(rpm -E %fedora 2>/dev/null || true)"
-  [ -n "$ver" ] || { warn "no se pudo detectar la versión de Fedora"; return 1; }
-  warn "Habilitando el repositorio Terra (tercero) para umbriel-nightly"
+  [ -n "$ver" ] || { warn "$(say 'could not detect the Fedora version' 'no se pudo detectar la versión de Fedora')"; return 1; }
+  warn "$(say 'Enabling the Terra repository (third party) for umbriel-nightly' 'Habilitando el repositorio Terra (tercero) para umbriel-nightly')"
   as_root dnf install -y --nogpgcheck --repofrompath "terra,https://repos.fyralabs.com/terra${ver}" terra-release
 }
 
 install_greeter() {
-  log "Greeter de Noctalia (opcional)"
+  log "$(say 'Noctalia greeter (optional)' 'Greeter de Noctalia (opcional)')"
   case "$FAMILY" in
-    debian) pkg_install noctalia-greeter || warn "no se pudo instalar noctalia-greeter" ;;
-    arch) pkg_install noctalia-greeter || warn "no está en los repos; búscalo en AUR si lo quieres" ;;
-    fedora) pkg_install noctalia-greeter || warn "no está en los repos de Fedora" ;;
-    *) warn "instala el greeter de Noctalia manualmente" ;;
+    debian) pkg_install noctalia-greeter || warn "$(say 'could not install noctalia-greeter' 'no se pudo instalar noctalia-greeter')" ;;
+    arch) pkg_install noctalia-greeter || warn "$(say 'not in the repositories; look in the AUR if you want it' 'no está en los repos; búscalo en AUR si lo quieres')" ;;
+    fedora) pkg_install noctalia-greeter || warn "$(say 'not in the Fedora repositories' 'no está en los repos de Fedora')" ;;
+    *) warn "$(say 'install the Noctalia greeter manually' 'instala el greeter de Noctalia manualmente')" ;;
   esac
-  cat <<'EOF'
+  if [ "$LANG_MODE" = es ]; then
+    cat <<'EOF'
   Para usarlo, configura greetd (/etc/greetd/config.toml):
     [default_session]
     command = "noctalia-greeter-session"
     user = "greeter"
   Luego: sudo systemctl enable --now greetd
 EOF
+  else
+    cat <<'EOF'
+  To use it, configure greetd (/etc/greetd/config.toml):
+    [default_session]
+    command = "noctalia-greeter-session"
+    user = "greeter"
+  Then: sudo systemctl enable --now greetd
+EOF
+  fi
 }
 
 setup_suse_repo() {
@@ -419,7 +502,7 @@ install_noctalia() {
       ;;
     fedora)
       pkg_install noctalia || {
-        warn "noctalia no está en los repos de Fedora; compilando"
+        warn "$(say 'noctalia is not in the Fedora repositories; building from source' 'noctalia no está en los repos de Fedora; compilando')"
         build_noctalia
       }
       ;;
@@ -450,7 +533,7 @@ install_umbriel() {
       elif need_cmd yay; then
         run yay -S --needed --noconfirm umbriel-git
       else
-        warn "no hay paru/yay; compilando Umbriel desde fuente"
+        warn "$(say 'no paru/yay found; building Umbriel from source' 'no hay paru/yay; compilando Umbriel desde fuente')"
         build_umbriel
       fi
       ;;
@@ -474,7 +557,7 @@ install_umbriel() {
       if ! pkg_install umbriel-nightly; then
         if setup_terra_repo; then
           pkg_install umbriel-nightly || {
-            warn "umbriel-nightly sigue sin estar disponible; compilando desde fuente"
+            warn "$(say 'umbriel-nightly is still unavailable; building from source' 'umbriel-nightly sigue sin estar disponible; compilando desde fuente')"
             build_umbriel
           }
         else
@@ -497,7 +580,7 @@ install_umbriel() {
 # ---------------------------------------------------------------------------
 
 ensure_cmd() {
-  need_cmd "$1" || die "falta '$1'; instala las dependencias o ejecuta sin --no-system"
+  need_cmd "$1" || die "$(say "missing '$1'; install the dependencies or run without --no-system" "falta '$1'; instala las dependencias o ejecuta sin --no-system")"
 }
 
 NOCT_BIN="$PREFIX/bin/noct"
@@ -510,7 +593,7 @@ ensure_umbriel_config() {
     "$PREFIX/share/umbriel/config.toml"; do
     if [ -f "$candidate" ]; then example="$candidate"; break; fi
   done
-  [ -n "$example" ] || { warn "Umbriel no dejó config.toml de ejemplo; se creará al iniciar la sesión"; return 0; }
+  [ -n "$example" ] || { warn "$(say 'Umbriel did not leave an example config.toml; it will be created when the session starts' 'Umbriel no dejó config.toml de ejemplo; se creará al iniciar la sesión')"; return 0; }
   run mkdir -p "$HOME/.config/umbriel"
   run cp "$example" "$cfg"
   # El ejemplo trae autostart comentado; Noctalia debe arrancar con la sesión.
@@ -527,14 +610,14 @@ else:
 open(path, 'w').write(text)
 PY
     else
-      warn "python3 no está; añade autostart = [\"noctalia\"] a [general] en $cfg"
+      warn "$(say 'python3 is missing; add autostart = ["noctalia"] to [general] in %s' 'python3 no está; añade autostart = ["noctalia"] a [general] en %s' "$cfg")"
     fi
   fi
 }
 
 install_theme_watcher() {
   local dir="$HOME/.config/systemd/user"
-  [ "$DRY_RUN" -eq 1 ] && { log "Escribiría el watcher noct-fix-umbriel-theme"; return 0; }
+  [ "$DRY_RUN" -eq 1 ] && { log "$(say 'Would write the noct-fix-umbriel-theme watcher' 'Escribiría el watcher noct-fix-umbriel-theme')"; return 0; }
   mkdir -p "$dir"
   cat > "$dir/noct-fix-umbriel-theme.service" <<EOF
 [Unit]
@@ -561,7 +644,7 @@ EOF
 
 write_wallpaper_config() {
   local mode="$1" path="${2:-}"
-  [ "$DRY_RUN" -eq 1 ] && { log "Escribiría wallpaper.toml en modo $mode"; return 0; }
+  [ "$DRY_RUN" -eq 1 ] && { log "$(say 'Would write wallpaper.toml in %s mode' 'Escribiría wallpaper.toml en modo %s' "$mode")"; return 0; }
   mkdir -p "$HOME/.config/noct"
   if [ "$mode" = fixed ] && [ -n "$path" ]; then
     printf 'mode = "fixed"\npath = "%s"\nupdated_at = 0\n' "$path" > "$HOME/.config/noct/wallpaper.toml"
@@ -576,7 +659,7 @@ configure_wallpaper() {
 
   case "$WALLPAPER_MODE" in
     bing-daily)
-      run "$NOCT_BIN" wallpaper bing-daily || warn "no se pudo aplicar Bing ahora; el timer lo hará al iniciar sesión"
+      run "$NOCT_BIN" wallpaper bing-daily || warn "$(say 'could not apply Bing now; the timer will do it at login' 'no se pudo aplicar Bing ahora; el timer lo hará al iniciar sesión')"
       ;;
     fixed)
       if [ -n "$WALLPAPER_PATH" ]; then
@@ -585,17 +668,17 @@ configure_wallpaper() {
         run "$NOCT_BIN" wallpaper fixed
       else
         write_wallpaper_config fixed
-        warn "Noctalia no está corriendo; el modo fijo se aplicará al iniciar sesión"
+        warn "$(say 'Noctalia is not running; fixed mode will be applied at login' 'Noctalia no está corriendo; el modo fijo se aplicará al iniciar sesión')"
       fi
       ;;
     "")
       if [ -f "$HOME/.config/noct/wallpaper.toml" ]; then
-        log "Wallpaper: se conserva el modo guardado"
+        log "$(say 'Wallpaper: keeping the saved mode' 'Wallpaper: se conserva el modo guardado')"
       elif [ "$noctalia_running" -eq 1 ]; then
         run "$NOCT_BIN" wallpaper fixed || true
       else
         write_wallpaper_config fixed
-        log "Wallpaper: modo fijo por defecto (se aplicará al iniciar sesión)"
+        log "$(say 'Wallpaper: fixed mode by default (applied at login)' 'Wallpaper: modo fijo por defecto (se aplicará al iniciar sesión)')"
       fi
       ;;
   esac
@@ -606,16 +689,16 @@ migrate_umbriel_syntax() {
   need_cmd umbriel || return 0
   # Solo migramos si el Umbriel instalado ya usa la sintaxis con espacios.
   if ! umbriel msg --help 2>/dev/null | grep -q 'workspace-switch <workspace>'; then
-    log "Umbriel antiguo detectado; se conserva la sintaxis de atajos"
+    log "$(say 'Old Umbriel detected; keeping the current keybind syntax' 'Umbriel antiguo detectado; se conserva la sintaxis de atajos')"
     return 0
   fi
-  [ "$DRY_RUN" -eq 1 ] && { log "Migraría la sintaxis de atajos de Umbriel"; return 0; }
+  [ "$DRY_RUN" -eq 1 ] && { log "$(say 'Would migrate the Umbriel keybind syntax' 'Migraría la sintaxis de atajos de Umbriel')"; return 0; }
   if ! need_cmd python3; then
-    warn "python3 no está; se omite la migración de atajos"
+    warn "$(say 'python3 is missing; skipping keybind migration' 'python3 no está; se omite la migración de atajos')"
     return 0
   fi
-  python3 - "$HOME/.config/umbriel" <<'PY'
-import re, sys, pathlib, shutil, datetime
+  LANG_MODE="$LANG_MODE" python3 - "$HOME/.config/umbriel" <<'PY'
+import os, re, sys, pathlib, shutil, datetime
 base = pathlib.Path(sys.argv[1])
 files = [base/'config.toml', base/'noct/keybinds.toml', base/'noct/bridge.toml']
 
@@ -656,7 +739,7 @@ for path in files:
     if updated != original:
         shutil.copy2(path, path.with_name(path.name + f'.pre-b56-{stamp}.bak'))
         path.write_text(updated)
-        print(f'migrado: {path}')
+        print((('migrado: ' if os.environ.get('LANG_MODE') == 'es' else 'migrated: ')) + str(path))
 PY
 }
 
@@ -669,10 +752,10 @@ install_noct() {
   case ":$PATH:" in
     *":$PREFIX/bin:"*) ;;
     *)
-      warn "$PREFIX/bin no está en PATH; añádelo en tu perfil de login"
+      warn "$(say '%s/bin is not in PATH; add it to your login profile' '%s/bin no está en PATH; añádelo en tu perfil de login' "$PREFIX")"
       if [ "$DRY_RUN" -eq 0 ] && [ -w "$HOME/.profile" ] && ! grep -q 'noct installer PATH' "$HOME/.profile" 2>/dev/null; then
         printf '\n# noct installer PATH\nexport PATH="%s/bin:$PATH"\n' "$PREFIX" >> "$HOME/.profile"
-        log "PATH añadido a ~/.profile"
+        log "$(say 'PATH added to ~/.profile' 'PATH añadido a ~/.profile')"
       fi
       ;;
   esac
@@ -694,15 +777,94 @@ configure_screenshot_keys() {
     chord="${pair%%|*}"
     action="${pair#*|}"
     if has_bind "$chord"; then
-      log "Atajo $chord ya existe; se conserva"
+      log "$(say 'Shortcut %s already exists; keeping it' 'Atajo %s ya existe; se conserva' "$chord")"
     else
-      run "$NOCT_BIN" keys set "$chord" "$action" || warn "no se pudo añadir $chord"
+      run "$NOCT_BIN" keys set "$chord" "$action" || warn "$(say 'could not add %s' 'no se pudo añadir %s' "$chord")"
     fi
   done
 }
 
+install_removable_drives() {
+  [ "$WITH_UDISKS" -eq 1 ] || return 0
+  log "$(say 'Removable drives (udisks2 + udiskie)' 'Discos extraíbles (udisks2 + udiskie)')"
+
+  if [ "$USER_ONLY" -eq 0 ] && [ "$NO_SYSTEM" -eq 0 ]; then
+    pkg_install_optional udisks2 udiskie
+  fi
+  if ! need_cmd udiskie; then
+    warn "$(say 'udiskie is not available; install it manually (pipx install udiskie) and run: udiskie --automount --notify' 'udiskie no está disponible; instálalo a mano (pipx install udiskie) y ejecuta: udiskie --automount --notify')"
+    return 0
+  fi
+
+  local cfg="$HOME/.config/udiskie/config.yml"
+  if [ ! -f "$cfg" ]; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+      log "$(say 'Would write %s' 'Escribiría %s' "$cfg")"
+    else
+      mkdir -p "$(dirname "$cfg")"
+      cat > "$cfg" <<'EOF'
+program_options:
+  automount: true
+  notify: true
+  tray: false
+EOF
+    fi
+  fi
+
+  if [ "$USER_ONLY" -eq 0 ] && [ "$NO_SYSTEM" -eq 0 ]; then
+    as_root systemctl enable --now udisks2 >/dev/null 2>&1 || \
+      warn "$(say 'could not enable udisks2' 'no se pudo habilitar udisks2')"
+  fi
+
+  if [ "$USER_ONLY" -eq 0 ] && [ "$NO_SYSTEM" -eq 0 ]; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+      log "$(say 'Would install the udisks polkit rule' 'Instalaría la regla polkit de udisks')"
+    else
+      as_root install -d -m 0755 /etc/polkit-1/rules.d
+      printf '%s\n' \
+        '// Noct — mount/eject removable drives for wheel (local, active session).' \
+        'polkit.addRule(function(action, subject) {' \
+        '    var allowed = [' \
+        '        "org.freedesktop.udisks2.filesystem-mount",' \
+        '        "org.freedesktop.udisks2.eject-media",' \
+        '        "org.freedesktop.udisks2.power-off-drive"' \
+        '    ];' \
+        '    if (allowed.indexOf(action.id) >= 0 &&' \
+        '        subject.isInGroup("wheel") &&' \
+        '        subject.local &&' \
+        '        subject.active) {' \
+        '        return polkit.Result.YES;' \
+        '    }' \
+        '});' | as_root tee /etc/polkit-1/rules.d/49-noct-udisks.rules >/dev/null
+    fi
+  else
+    log "$(say 'Skipping the system polkit rule (--user or --no-system)' 'Se omite la regla polkit del sistema (--user o --no-system)')"
+  fi
+
+  local unit="$HOME/.config/systemd/user/noct-udiskie.service"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    log "$(say 'Would enable the noct-udiskie user service' 'Habilitaría el servicio de usuario noct-udiskie')"
+    return 0
+  fi
+  mkdir -p "$(dirname "$unit")"
+  cat > "$unit" <<EOF
+[Unit]
+Description=Noct removable drive automount
+
+[Service]
+ExecStart=$(command -v udiskie) --automount --notify
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+EOF
+  systemctl --user daemon-reload >/dev/null 2>&1 || true
+  systemctl --user enable --now noct-udiskie.service >/dev/null 2>&1 || \
+    warn "$(say 'could not start the noct-udiskie user service' 'no se pudo iniciar el servicio de usuario noct-udiskie')"
+}
+
 configure_noct() {
-  log "Configuración de Noct"
+  log "$(say 'Configuring Noct' 'Configuración de Noct')"
   ensure_umbriel_config
   run "$NOCT_BIN" doctor --fix || true
   if [ ! -f "$HOME/.config/umbriel/noct/effects.toml" ]; then
@@ -738,19 +900,37 @@ if [ "$WITH_UMBRIEL" -eq 1 ]; then
 fi
 
 install_noct
+install_removable_drives
 configure_noct
 
-log "Listo."
+log "$(say 'Done.' 'Listo.')"
 if [ "$DRY_RUN" -eq 0 ]; then
   echo
-  echo "Comprobaciones:"
-  echo "  noct --version"
-  echo "  umbriel --version"
-  echo "  umbriel config validate"
-  echo "  noct wallpaper status"
-  echo
-  echo "Cierra sesión y vuelve a entrar para usar el Umbriel nuevo."
-  echo "Wallpaper:"
-  echo "  noct wallpaper fixed [ruta]   # fijo, sin volver a Bing"
-  echo "  noct wallpaper bing-daily     # Bing diario + greeter"
+  if [ "$LANG_MODE" = es ]; then
+    echo "Comprobaciones:"
+    echo "  noct --version"
+    echo "  umbriel --version"
+    echo "  umbriel config validate"
+    echo "  noct wallpaper status"
+    echo
+    echo "Cierra sesión y vuelve a entrar para usar el Umbriel nuevo."
+    echo "Wallpaper:"
+    echo "  noct wallpaper fixed [ruta]   # fijo, sin volver a Bing"
+    echo "  noct wallpaper bing-daily     # Bing diario + greeter"
+    echo
+    echo "USB: conecta un dispositivo; udiskie lo montará en /run/media/$USER."
+  else
+    echo "Checks:"
+    echo "  noct --version"
+    echo "  umbriel --version"
+    echo "  umbriel config validate"
+    echo "  noct wallpaper status"
+    echo
+    echo "Log out and back in to use the new Umbriel."
+    echo "Wallpaper:"
+    echo "  noct wallpaper fixed [path]   # fixed, never reverts to Bing"
+    echo "  noct wallpaper bing-daily     # daily Bing + greeter"
+    echo
+    echo "USB: plug a device; udiskie will mount it under /run/media/$USER."
+  fi
 fi

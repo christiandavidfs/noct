@@ -70,17 +70,28 @@ state) and can repair some of them with `noct doctor --fix`.
 | --- | --- |
 | `--dry-run` | Print commands without running them |
 | `--yes` | Do not ask for confirmation |
+| `--lang en\|es` | Output language (default: system locale) |
 | `--user` | Install Noctalia/Umbriel under `~/.local` (no sudo for them) |
 | `--prefix PATH` | Noct install prefix (default `~/.local`) |
 | `--system-prefix PATH` | Noctalia/Umbriel prefix (default `/usr/local`) |
 | `--no-system` | Skip system dependency installation |
 | `--no-noctalia` | Do not install/update Noctalia |
 | `--no-umbriel` | Do not install/update Umbriel |
+| `--no-udisks` | Skip automatic USB/removable drive mounting |
 | `--from-source` | Build Noctalia and Umbriel from source |
 | `--wallpaper fixed\|bing-daily` | Wallpaper mode |
 | `--wallpaper-path PATH` | Fixed wallpaper to apply |
 | `--with-greeter` | Install `noctalia-greeter` (does not configure greetd) |
 | `--no-migrate` | Do not migrate old Umbriel keybind syntax |
+
+The installer follows the system locale and also accepts `--lang en` or `--lang es`.
+
+### Removable drives
+
+The installer sets up `udisks2` + `udiskie` with a user service, so USB sticks and
+external SSDs are detected and mounted under `/run/media/$USER`. It also adds a
+polkit rule for users in the `wheel` group (local, active session). Disable it with
+`--no-udisks`.
 
 ### Distribution notes
 

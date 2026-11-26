@@ -67,17 +67,24 @@ Después cierra sesión y vuelve a entrar eligiendo **Umbriel** como sesión.
 | Opción | Significado |
 | --- | --- |
 | `--dry-run` | Muestra los comandos sin ejecutarlos |
+| `--yes` | No pide confirmación |
+| `--lang en\|es` | Idioma de la salida (por defecto: locale del sistema) |
 | `--user` | Instala Noctalia/Umbriel en `~/.local` (sin sudo para ellos) |
 | `--prefix RUTA` | Prefijo de Noct (por defecto `~/.local`) |
 | `--system-prefix RUTA` | Prefijo de Noctalia/Umbriel (por defecto `/usr/local`) |
 | `--no-system` | No instala dependencias del sistema |
 | `--no-noctalia` | No instala/actualiza Noctalia |
 | `--no-umbriel` | No instala/actualiza Umbriel |
+| `--no-udisks` | No configura el montaje automático de USB |
 | `--from-source` | Compila Noctalia y Umbriel desde fuente |
 | `--wallpaper fixed\|bing-daily` | Modo de fondo |
 | `--wallpaper-path RUTA` | Fondo fijo que aplicar |
 | `--with-greeter` | Instala `noctalia-greeter` (no configura greetd) |
 | `--no-migrate` | No migra la sintaxis antigua de Umbriel |
+
+El instalador es bilingüe: sigue el locale del sistema y también acepta
+`--lang en` o `--lang es`. Instala `udisks2` + `udiskie` con un servicio de usuario
+para que los USB y SSD externos se monten automáticamente; `--no-udisks` lo omite.
 
 ### Notas por distribución
 
