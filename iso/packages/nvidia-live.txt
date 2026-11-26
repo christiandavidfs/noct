@@ -1,0 +1,6 @@
+# Packages added to the live root only on the NVIDIA edition.
+# The installed system gets its driver from the installer catalog.
+nvidia-open
+nvidia-utils
+nvidia-prime
+nvidia-settings
