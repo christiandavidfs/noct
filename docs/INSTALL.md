@@ -169,9 +169,12 @@ Current status:
 
 ### Download
 
-Prebuilt ISOs will be published under
-[GitHub Releases](https://github.com/christiandavidfs/noct/releases). There is no public ISO
-yet: until the installer milestone, build from source with the steps below.
+Prebuilt ISOs are published under
+[GitHub Releases](https://github.com/christiandavidfs/noct/releases). The current live
+preview is
+[nocturne-2026.11-live](https://github.com/christiandavidfs/noct/releases/tag/nocturne-2026.11-live).
+It is a live environment only; the installer is the next milestone. You can also build from
+source with the steps below.
 
 ### Build requirements
 

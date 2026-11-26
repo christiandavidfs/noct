@@ -240,6 +240,7 @@ Current status:
 - Noct’s effects plugin is included in the live image and can be installed with `noct effects widget`.
 
 Build, burn and test instructions: **[docs/INSTALL.md#nocturne-linux](docs/INSTALL.md#nocturne-linux)** · **[Español](docs/INSTALL.es.md#nocturne-linux)**.
+Download the current live preview: **[nocturne-2026.11-live](https://github.com/christiandavidfs/noct/releases/tag/nocturne-2026.11-live)**.
 
 ## Documentation
 

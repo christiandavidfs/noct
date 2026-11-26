@@ -240,6 +240,7 @@ Estado actual:
 - el plugin de efectos de Noct está incluido en la imagen live y se instala con `noct effects widget`.
 
 Instrucciones de compilación, grabación y prueba: **[docs/INSTALL.es.md#nocturne-linux](docs/INSTALL.es.md#nocturne-linux)** · **[English](docs/INSTALL.md#nocturne-linux)**.
+Descarga la vista previa live actual: **[nocturne-2026.11-live](https://github.com/christiandavidfs/noct/releases/tag/nocturne-2026.11-live)**.
 
 ## Documentación
 

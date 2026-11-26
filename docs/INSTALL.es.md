@@ -170,9 +170,12 @@ Estado actual:
 
 ### Descarga
 
-Las ISOs precompiladas se publicarán en
-[GitHub Releases](https://github.com/christiandavidfs/noct/releases). Todavía no hay ISO
-pública: hasta el hito del instalador, compílala desde fuente con los pasos de abajo.
+Las ISOs precompiladas se publican en
+[GitHub Releases](https://github.com/christiandavidfs/noct/releases). La vista previa live
+actual es
+[nocturne-2026.11-live](https://github.com/christiandavidfs/noct/releases/tag/nocturne-2026.11-live).
+Es solo un entorno live; el instalador es el siguiente hito. También puedes compilarla desde
+fuente con los pasos de abajo.
 
 ### Requisitos de compilación
 
