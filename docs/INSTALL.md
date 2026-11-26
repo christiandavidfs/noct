@@ -196,10 +196,9 @@ Current status:
 
 ### Download
 
-Prebuilt ISOs will be published under
-[GitHub Releases](https://github.com/christiandavidfs/noct/releases). The first Noga
-preview will be published after the branding pass; the previous Nocturne live preview is
-historical. You can build from source with the steps below.
+Prebuilt ISOs are published under
+[GitHub Releases](https://github.com/christiandavidfs/noct/releases). You can also build
+from source with the steps below.
 
 ### Build requirements
 

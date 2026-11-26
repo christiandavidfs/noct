@@ -197,10 +197,9 @@ Estado actual:
 
 ### Descarga
 
-Las ISOs precompiladas se publicarán en
-[GitHub Releases](https://github.com/christiandavidfs/noct/releases). La primera vista previa
-de Noga se publicará tras la pasada de branding; la vista previa anterior de Nocturne queda
-como histórica. También puedes compilarla desde fuente con los pasos de abajo.
+Las ISOs precompiladas se publican en
+[GitHub Releases](https://github.com/christiandavidfs/noct/releases). También puedes
+compilarlas desde fuente con los pasos de abajo.
 
 ### Requisitos de compilación
 

@@ -236,7 +236,7 @@ Estado actual:
 - el plugin de efectos de Noct está incluido en la imagen live y se instala con `noct effects widget`.
 
 Instrucciones de compilación, grabación y prueba: **[docs/INSTALL.es.md#noga-linux](docs/INSTALL.es.md#noga-linux)** · **[English](docs/INSTALL.md#noga-linux)**.
-Las previews de Noga se publican en [GitHub Releases](https://github.com/christiandavidfs/noct/releases). La preview anterior de Nocturne queda como build histórica.
+Las previews de Noga se publican en [GitHub Releases](https://github.com/christiandavidfs/noct/releases).
 
 ## Documentación
 
