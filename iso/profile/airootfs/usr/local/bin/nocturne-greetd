@@ -1,0 +1,16 @@
+#!/bin/sh
+# Configura greetd para autologin con el primer usuario humano del sistema.
+set -eu
+
+user="$(awk -F: '$3 >= 1000 && $3 < 60000 {print $1; exit}' /etc/passwd)"
+[ -n "$user" ] || user="noct"
+
+cat > /etc/greetd/config.toml <<EOF
+[terminal]
+vt = 1
+
+[default_session]
+command = "niri-session"
+user = "$user"
+EOF
+chmod 644 /etc/greetd/config.toml

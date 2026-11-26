@@ -15,4 +15,4 @@ exec sudo env \
   DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" \
   QT_QPA_PLATFORM="$QT_QPA_PLATFORM" \
   XDG_CURRENT_DESKTOP="$XDG_CURRENT_DESKTOP" \
-  calamares -c /etc/calamares/settings-noct.conf "$@"
+  calamares -c /etc/calamares "$@"

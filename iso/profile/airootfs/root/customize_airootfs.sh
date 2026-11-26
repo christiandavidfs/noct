@@ -47,6 +47,17 @@ if [ -f /usr/share/nocturne/wallpapers/nocturne.png ]; then
     /usr/share/noctalia/assets/noctalia-wallpaper.png
 fi
 
+# Calamares: nuestra secuencia y el qml que instala el paquete.
+if [ -f /etc/calamares/settings-noct.conf ]; then
+  install -Dm644 /etc/calamares/settings-noct.conf /etc/calamares/settings.conf
+fi
+ln -sfn /usr/share/calamares/qml /etc/calamares/qml
+
+# Nombre de Nocturne en el menú de GRUB del sistema instalado.
+if [ -f /etc/default/grub ]; then
+  sed -i 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="Nocturne"/' /etc/default/grub
+fi
+
 # Punto de montaje del llavero temporal. Se deja creado (vacío) para que
 # pacman-init pueda montar el tmpfs al arrancar. Sin bases de datos de sync,
 # mkarchiso no intenta verificar firmas al generar la lista de paquetes.

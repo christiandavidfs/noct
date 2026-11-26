@@ -1,0 +1,24 @@
+#!/bin/sh
+# Instala GRUB en el disco que contiene la raíz instalada.
+# Se ejecuta dentro del sistema objetivo desde Calamares.
+set -eu
+
+root_uuid="$(awk '$2 == "/" {print $1}' /etc/fstab | sed 's/^UUID=//')"
+[ -n "$root_uuid" ] || { echo "nocturne: no root UUID in /etc/fstab" >&2; exit 1; }
+
+root_dev="$(blkid -U "$root_uuid")"
+[ -n "$root_dev" ] || { echo "nocturne: cannot resolve root device" >&2; exit 1; }
+
+case "$root_dev" in
+  /dev/nvme*|/dev/mmcblk*|/dev/loop*) disk="${root_dev%p[0-9]*}" ;;
+  *) disk="${root_dev%[0-9]*}" ;;
+esac
+
+if [ -d /sys/firmware/efi/efivars ]; then
+  mkdir -p /boot/efi
+  grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Nocturne
+else
+  grub-install --target=i386-pc "$disk"
+fi
+
+grub-mkconfig -o /boot/grub/grub.cfg
