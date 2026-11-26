@@ -8,24 +8,6 @@ Noct is not a compositor fork. It manages existing Noctalia/Umbriel installation
 
 **[Nocturne Linux](docs/INSTALL.md#nocturne-linux)** is the reference distribution built on top of it: CachyOS + Niri + Noctalia, with Noct preconfigured.
 
-## Gallery
-
-![Nocturne Linux desktop](docs/screenshots/desktop.png)
-
-| Noct Effects | Mix effects |
-|:---:|:---:|
-| ![Noct Effects panel](docs/screenshots/effects.png) | ![Per-slot effect mixing](docs/screenshots/effects-mix.png) |
-
-| Launcher | Control center |
-|:---:|:---:|
-| ![Noctalia launcher](docs/screenshots/launcher.png) | ![Noctalia control center with the Noct Effects tile](docs/screenshots/control-center.png) |
-
-| Terminal with the `noct` CLI | Noctalia settings |
-|:---:|:---:|
-| ![Foot terminal running noct --help](docs/screenshots/terminal.png) | ![Noctalia settings](docs/screenshots/settings.png) |
-
-More screenshots and installation guides: [English](docs/INSTALL.md) · [Español](docs/INSTALL.es.md).
-
 ## What it includes
 
 - **`noct` CLI**: diagnostics, themes, keybinds, compositor bridge, effects, wallpaper modes and a LAN sync server.
