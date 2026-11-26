@@ -42,8 +42,8 @@ chmod 0440 /etc/sudoers.d/10-noga-live
 ln -sf /dev/null /etc/systemd/system/ananicy-cpp.service
 
 # Fondo por defecto de Noga (sin el búho de Noctalia).
-if [ -f /usr/share/rakia/wallpapers/black.png ]; then
-  install -Dm644 /usr/share/rakia/wallpapers/black.png \
+if [ -f /usr/share/rakia/wallpapers/noctalia-wallpaper.png ]; then
+  install -Dm644 /usr/share/rakia/wallpapers/noctalia-wallpaper.png \
     /usr/share/noctalia/assets/noctalia-wallpaper.png
 fi
 

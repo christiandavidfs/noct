@@ -6,7 +6,7 @@ Noct es una capa de integración para **[Noctalia](https://github.com/noctalia-d
 
 Noct no es un fork del compositor. Gestiona instalaciones existentes de Noctalia/Umbriel mediante comandos pequeños e idempotentes y fragmentos de configuración propios.
 
-**[Noga Linux](docs/INSTALL.es.md#noga-linux)** es la distribución de referencia construida sobre Noct: CachyOS + Niri + Noctalia, con Noct ya configurado. Incluye el **escritorio Rakia**, una configuración de Niri + Noctalia + Noct pensada para el scroll infinito y el espacio infinito; `rakia.desktop` lo selecciona en los gestores de sesión.
+**[Noga Linux](docs/INSTALL.es.md#noga-linux)** es la distribución de referencia construida sobre Noct: CachyOS + Umbriel + Noctalia, con Noct ya configurado. Incluye el **escritorio Rakia**, una configuración de Umbriel + Noctalia + Noct pensada para el scroll infinito y el espacio infinito; `rakia.desktop` lo selecciona en los gestores de sesión.
 
 ## Qué incluye
 
@@ -223,19 +223,20 @@ Ejecuta `noct sync serve` en el escritorio e introduce la URL y el token en la p
 
 ## Noga Linux
 
-**Noga Linux** es la distribución de referencia de Noct: una ISO live mínima basada en CachyOS con Niri, Noctalia y Noct ya configurados. Mantiene los repositorios, el llavero y los nombres de paquetes de CachyOS, así que las actualizaciones siguen viniendo de CachyOS.
+**Noga Linux** es la distribución de referencia de Noct: una ISO live mínima basada en CachyOS con Umbriel, Noctalia y Noct ya configurados (Niri como fallback). Mantiene los repositorios, el llavero y los nombres de paquetes de CachyOS, así que las actualizaciones siguen viniendo de CachyOS.
 
-El **escritorio Rakia** es la configuración de Niri + Noctalia + Noct que incluye: mosaico desplazable, espacio infinito y la capa de temas de Noct. La sesión se publica como `rakia.desktop`.
+El **escritorio Rakia** es la configuración de Umbriel + Noctalia + Noct que incluye: mosaico desplazable, espacio infinito y la capa de temas de Noct. La sesión se publica como `rakia.desktop`. Usa por defecto el tema oscuro, el fondo de Noga y la marca Kepler en el lanzador y el dock.
 
 Estado actual:
 
-- la ISO live arranca en BIOS (syslinux) y UEFI (systemd-boot), con autologin a Niri + Noctalia;
+- la ISO live arranca en BIOS (syslinux) y UEFI (systemd-boot), con autologin a Umbriel + Noctalia;
 - las ediciones slim y NVIDIA se generan desde el mismo perfil;
-- el instalador gráfico (Calamares) es el siguiente paso; la ISO actual es un entorno live;
+- el instalador gráfico (Calamares) instala el sistema offline y escribe GRUB para BIOS y UEFI;
+- los USB y discos externos se montan automáticamente en el live y en el sistema instalado;
 - el plugin de efectos de Noct está incluido en la imagen live y se instala con `noct effects widget`.
 
 Instrucciones de compilación, grabación y prueba: **[docs/INSTALL.es.md#noga-linux](docs/INSTALL.es.md#noga-linux)** · **[English](docs/INSTALL.md#noga-linux)**.
-La primera vista previa de Noga se publicará en [GitHub Releases](https://github.com/christiandavidfs/noct/releases) tras la pasada de branding. La vista previa anterior de Nocturne queda como build histórica.
+Las previews de Noga se publican en [GitHub Releases](https://github.com/christiandavidfs/noct/releases). La preview anterior de Nocturne queda como build histórica.
 
 ## Documentación
 

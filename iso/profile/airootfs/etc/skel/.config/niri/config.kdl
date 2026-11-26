@@ -138,6 +138,8 @@ binds {
     // Aplicaciones
     Mod+Return hotkey-overlay-title="Terminal: foot" { spawn "foot"; }
     Mod+D hotkey-overlay-title="Lanzador: Noctalia" { spawn-sh "noctalia msg panel-toggle launcher"; }
+    Mod+Space hotkey-overlay-title="Lanzador: Noctalia" { spawn-sh "noctalia msg panel-toggle launcher"; }
+    Mod+Shift+D hotkey-overlay-title="Dock: Noctalia" { spawn-sh "noctalia msg dock-toggle"; }
 
     // Noctalia
     Mod+Shift+Return hotkey-overlay-title="Fondos: Noctalia" { spawn-sh "noctalia msg panel-toggle wallpaper"; }

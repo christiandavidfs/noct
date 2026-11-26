@@ -6,7 +6,7 @@ Noct is an integration layer for **[Noctalia](https://github.com/noctalia-dev/no
 
 Noct is not a compositor fork. It manages existing Noctalia/Umbriel installations through small, idempotent commands and managed config fragments.
 
-**[Noga Linux](docs/INSTALL.md#noga-linux)** is the reference distribution built on top of it: CachyOS + Niri + Noctalia, with Noct preconfigured. It ships the **Rakia desktop**, a Niri + Noctalia + Noct configuration built around infinite scroll and infinite space; `rakia.desktop` selects it in display managers.
+**[Noga Linux](docs/INSTALL.md#noga-linux)** is the reference distribution built on top of it: CachyOS + Umbriel + Noctalia, with Noct preconfigured. It ships the **Rakia desktop**, an Umbriel + Noctalia + Noct configuration built around infinite scroll and infinite space; `rakia.desktop` selects it in display managers.
 
 ## What it includes
 
@@ -223,19 +223,20 @@ Run `noct sync serve` on the desktop and enter the URL + token in the launcher�
 
 ## Noga Linux
 
-**Noga Linux** is the reference distribution for Noct: a minimal CachyOS-based live ISO with Niri, Noctalia and Noct preconfigured. It keeps CachyOS repositories, keyring and package names, so updates continue to come from CachyOS.
+**Noga Linux** is the reference distribution for Noct: a minimal CachyOS-based live ISO with Umbriel, Noctalia and Noct preconfigured (Niri fallback). It keeps CachyOS repositories, keyring and package names, so updates continue to come from CachyOS.
 
-The **Rakia desktop** is the Niri + Noctalia + Noct configuration it ships: scrollable tiling, infinite space, and the Noct theme layer. The session is published as `rakia.desktop`.
+The **Rakia desktop** is the Umbriel + Noctalia + Noct configuration it ships: scrollable tiling, infinite space, and the Noct theme layer. The session is published as `rakia.desktop`. It defaults to the dark theme, the Noga wallpaper and the Kepler mark in the launcher and dock.
 
 Current status:
 
-- live ISO boots on BIOS (syslinux) and UEFI (systemd-boot), with autologin into Niri + Noctalia;
+- live ISO boots on BIOS (syslinux) and UEFI (systemd-boot), with autologin into Umbriel + Noctalia;
 - slim and NVIDIA editions are generated from the same profile;
-- the graphical installer (Calamares) is the next milestone; the current ISO is a live environment;
+- the graphical installer (Calamares) installs the system offline and writes GRUB for BIOS and UEFI;
+- USB and external drives are mounted automatically in live and installed systems;
 - Noct’s effects plugin is included in the live image and can be installed with `noct effects widget`.
 
 Build, burn and test instructions: **[docs/INSTALL.md#noga-linux](docs/INSTALL.md#noga-linux)** · **[Español](docs/INSTALL.es.md#noga-linux)**.
-The first Noga preview will be published under [GitHub Releases](https://github.com/christiandavidfs/noct/releases) after the branding pass. The previous Nocturne preview remains available as a historical build.
+The Noga previews are published under [GitHub Releases](https://github.com/christiandavidfs/noct/releases). The previous Nocturne preview remains as a historical build.
 
 ## Documentation
 

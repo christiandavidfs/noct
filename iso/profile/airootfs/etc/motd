@@ -3,7 +3,8 @@
   Wi-Fi:        nmcli device wifi list && nmcli device wifi connect "SSID" password "..."
   O usa:        nmtui
   Terminal:     Mod+Return
-  Lanzador:     Mod+D
+  Lanzador:     Super (sola)
+  Dock:         Mod+Shift+D
   Ajustes:      Mod+Shift+S
   Consola de rescate: Ctrl+Alt+F2 (root, sin contraseña)
 

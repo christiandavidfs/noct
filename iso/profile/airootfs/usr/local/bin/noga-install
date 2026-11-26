@@ -9,7 +9,14 @@ QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-wayland}"
 XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP:-niri}"
 export XDG_RUNTIME_DIR WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS QT_QPA_PLATFORM XDG_CURRENT_DESKTOP
 
-exec sudo env \
+# El dock ocupa el borde inferior y tapa los botones de Calamares.
+# Se oculta durante la instalación y se restaura al salir.
+if command -v noctalia >/dev/null 2>&1; then
+  noctalia msg dock-hide >/dev/null 2>&1 || true
+  trap 'noctalia msg dock-show >/dev/null 2>&1 || true' EXIT INT TERM
+fi
+
+sudo env \
   XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
   WAYLAND_DISPLAY="$WAYLAND_DISPLAY" \
   DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" \

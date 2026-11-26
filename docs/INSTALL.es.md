@@ -172,9 +172,9 @@ configuración.
 
 ### Qué es
 
-Noga Linux es una ISO live mínima basada en CachyOS con **Niri + Noctalia + Noct**
-listos para usar.
-La sesión de escritorio es **Rakia**, una configuración de Niri + Noctalia + Noct pensada
+Noga Linux es una ISO live mínima basada en CachyOS con **Umbriel + Noctalia + Noct**
+listos (Niri como fallback) para usar.
+La sesión de escritorio es **Rakia**, una configuración de Umbriel + Noctalia + Noct pensada
 para el scroll infinito y el espacio infinito. Aparece como `rakia.desktop` en los gestores de sesión. Mantiene los repositorios, el llavero y los nombres de paquetes de
 CachyOS, así que las actualizaciones siguen viniendo de CachyOS. La marca es Noga; los
 paquetes no se renombran ni se recompilan.
@@ -182,13 +182,18 @@ paquetes no se renombran ni se recompilan.
 Estado actual:
 
 - **la ISO live funciona** en BIOS (syslinux) y UEFI (systemd-boot);
-- autologin a Niri + Noctalia con el usuario `noga`;
+- autologin a Umbriel + Noctalia con el usuario `noga`;
 - edición **slim** para Intel/AMD y edición **NVIDIA** con `nvidia-open`;
-- **el instalador gráfico (Calamares) es el siguiente paso**. La ISO actual es un entorno
-  live, todavía no un instalador completo.
+- **instalador Calamares** (offline): instala el sistema live en disco, escribe GRUB para
+  BIOS y UEFI, fija locale/teclado/zona horaria en Madrid y configura el autologin del
+  usuario creado durante la instalación;
+- los USB y discos externos se montan automáticamente en el live y en el sistema
+  instalado;
+- escritorio por defecto: tema oscuro, fondo de Noga y la marca Kepler en el lanzador/dock.
 
-> No instales la ISO pre-release actual sobre un disco que te importe. Usa una máquina
-> virtual o un disco de repuesto hasta que se publique el hito del instalador.
+> El instalador está probado en máquinas virtuales BIOS y UEFI. Haz copia de tus datos
+> antes de instalar en hardware real; la edición NVIDIA todavía no se ha probado en una
+> GPU NVIDIA física.
 
 ### Descarga
 
@@ -274,7 +279,9 @@ firma el kernel y el bootloader con `sbctl` o usa un shim; queda fuera del alcan
 | Sudo | sin contraseña en la sesión live |
 | Consola de rescate | `Ctrl+Alt+F2`, login `root` (sin contraseña) |
 | Terminal | `Mod+Return` (foot) |
-| Lanzador | `Mod+D` |
+| Lanzador | `Super` (pulsación) |
+| Lanzador (fallback Niri) | `Mod+D` o `Mod+Space` |
+| Dock | `Mod+Shift+D` |
 | Centro de control | `Mod+S` |
 | Ajustes de Noctalia | `Mod+Shift+S` |
 | Fondo de pantalla | `Mod+Shift+Return` |
@@ -283,7 +290,7 @@ firma el kernel y el bootloader con `sbctl` o usa un shim; queda fuera del alcan
 | Captura (región) | `Print` |
 | Captura (ventana) | `Shift+Print` |
 | Captura (monitor) | `Ctrl+Print` |
-| Salir de Niri | `Ctrl+Alt+Delete` |
+| Salir de la sesión | `Mod+Escape` |
 
 Wi-Fi:
 
@@ -321,14 +328,14 @@ instalador gráfico con:
   `noct-gaming`, `noct-dev`, `noct-office`);
 - instalación del bootloader (systemd-boot o GRUB).
 
-Hasta entonces, usa la sesión live para evaluar Noga y Noct. La ruta de instalación en
-disco se documentará aquí en cuanto el instalador sea probable.
+El instalador está probado en máquinas virtuales BIOS y UEFI; haz copia de tus datos
+antes de instalar en hardware real.
 
 ### Probar en QEMU
 
-Niri necesita un renderer GL real. Con el `virtio-vga` normal de QEMU (sin 3D) Niri descarta
-el EGL de software y verás una pantalla negra aunque el sistema haya arrancado. Usa
-`virtio-vga-gl`:
+Umbriel y Niri necesitan un renderer GL real. Con el `virtio-vga` normal de QEMU (sin 3D)
+el compositor descarta el EGL de software y verás una pantalla negra aunque el sistema
+haya arrancado. Usa `virtio-vga-gl`:
 
 ```bash
 cp /usr/share/edk2/x64/OVMF_VARS.4m.fd /tmp/OVMF_VARS.fd

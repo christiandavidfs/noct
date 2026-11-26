@@ -1,71 +1,67 @@
-# Branding — notas para la pasada final
+# Branding — Noga Linux / Rakia
 
 > **Summary (EN):** Noga = distro (brightness / Venus), Rakia = desktop (expanse /
-> infinite scroll), Noct = integration layer. Logo idea: a Kepler polyhedron as
-> technical line art on black; no crescent, moon or owl. Final pass pending.
+> infinite scroll), Noct = integration layer. The mark is the small stellated
+> dodecahedron {5/2,5}, a Kepler–Poinsot polyhedron, rendered as a pseudo-3D mint
+> wireframe. No crescent, moon or owl anywhere.
 
-Estado: **pendiente**. La ISO actual usa fondo negro y conserva el creciente
-antiguo solo como marcador. No publicar branding definitivo hasta cerrar esta nota.
+Estado: **cerrado para la primera preview**. El creciente y el búho han sido
+retirados de las superficies de la distro.
 
 ## Nombres
 
 - **Noga Linux** — la distro. *Noga* (נוגה): Venus, brillo, lucero. Es el sistema,
   la ISO y el nombre que verá quien instale.
 - **Rakia** — el escritorio. *Rakia* (רקיע): expansión, espacio infinito. Encaja con
-  Niri y su scroll infinito; es la configuración Niri + Noctalia + Noct.
+  Umbriel y su scroll infinito; es la configuración Umbriel + Noctalia + Noct.
 - **Noct** — la capa de integración: CLI, plugin de Noctalia, sync y configuración.
 - **Emet** — framework de automatización QA, proyecto aparte; no forma parte del
   naming de la distro.
 
 ## Logo
 
-Idea guardada: **el poliedro de Kepler**.
+Marca elegida: **pequeño dodecaedro estrellado** `{5/2,5}`.
 
-Candidatos:
+- 12 vértices, 30 aristas, 12 caras pentagrammicas; es el poliedro de Kepler más
+  reconocible.
+- Render pseudo-3D: aristas de tubo, nodos en los vértices, luz mint y fondo negro.
+- Se acepta la lectura geométrica de estrella; **no hay referencias islámicas,
+  creciente, luna ni búho**.
+- Archivos:
+  - `docs/branding/logo-kepler-3d.png` — presentación sobre negro.
+  - `docs/branding/logo-kepler-3d-transparent.png` — marca con alfa.
+  - `iso/profile/airootfs/usr/share/rakia/branding/` — marca, avatar e icono usados
+    por el escritorio.
+- Usos:
+  - icono del lanzador del dock y avatar de usuario en Noctalia;
+  - logo e icono de Calamares y welcome del instalador;
+  - base para el logo definitivo de Noga.
 
-- **Pequeño dodecaedro estrellado** `{5/2,5}`: el “poliedro de Kepler” más reconocible,
-  12 caras pentagrammicas. Buena lectura a tamaño pequeño y muy geométrico.
-- **Gran dodecaedro estrellado** `{5/2,3}`: más puntiagudo y estrellado.
-- **Modelo de Kepler** (sólidos platónicos anidados): demasiado complejo para un icono;
-  reservado para una ilustración grande o un wallpaper.
+## Fondo y tema
 
-Estilo propuesto:
-
-- línea fina, wireframe o aristas, sin relleno;
-- blanco hueso o mint sobre negro;
-- geometría técnica, sin lectura mística o religiosa;
-- **sin creciente, sin luna y sin búho** en ninguna superficie.
-
-Uso:
-
-- **Noga** puede usar el poliedro completo (brillo, Venus, sistema).
-- **Rakia** puede usar solo las aristas o una expansión del mismo poliedro
-  (expansión, scroll infinito, escritorio).
-- El logo es un acento; el fondo por defecto sigue siendo negro vacío.
+- Fondo por defecto: `iso/profile/airootfs/usr/share/rakia/wallpapers/rakia-default.jpg`
+  (el fondo oscuro técnico actual del autor, 16:9).
+- Noctalia arranca en **modo oscuro** (`mode = "dark"`, `shell_mode = "dark"`).
+- El fondo negro liso anterior queda retirado.
 
 ## Paleta y tipografía
 
-- Negro `#000000` / `#05060A`; texto `#E8F6EC`; acento mint `#7CFFB2` (revisar
-  saturación en la pasada final).
+- Negro `#000000` / `#05060A`; texto `#E8F6EC`; acento mint `#7CFFB2`.
 - Tipografía geométrica sans: Inter, IBM Plex Sans o DejaVu Sans como fallback.
-- Tagline provisional: “un escritorio hecho de noche” (español); revisar la versión
-  inglesa cuando se cierre el naming.
+- Tagline: “un escritorio hecho de noche” (español); pendiente la versión inglesa.
 
-## Superficies a actualizar
+## Superficies actualizadas
 
 - `os-release`, `/etc/issue`, hostname y label de la ISO (`NOGA_...`).
 - Calamares: `branding/noga/*` (logo, icono, welcome, slideshow) y
   `GRUB_DISTRIBUTOR`.
 - Menús de syslinux y systemd-boot.
-- `/etc/skel`: fondo negro y sesión `rakia.desktop`.
-- README/README.es, guías, releases, nombres de paquetes (`noga-branding`,
-  `noga-defaults`) y, si se separa, el repo de la distro.
-- Retirar el creciente y el búho de todas las imágenes.
+- `/etc/skel`: fondo por defecto, tema oscuro, dock con la marca y sesión
+  `rakia.desktop`.
+- README/README.es y guías.
 
 ## Decisiones pendientes
 
-- Variante exacta del poliedro (pequeño vs. gran dodecaedro estrellado).
-- ¿Noga y Rakia comparten logo o llevan marcas separadas?
-- Paleta y tipografía finales.
-- Tagline final en inglés y español.
+- Tagline final en inglés.
+- ¿Noga y Rakia comparten marca o Rakia usa una variante (solo aristas)?
 - ¿El repo `noct` se separa en `noga` (distro) y `rakia` (escritorio)?

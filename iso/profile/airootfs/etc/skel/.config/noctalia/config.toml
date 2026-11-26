@@ -1,2 +1,24 @@
+# Noga Linux — configuración por defecto de Noctalia.
+# Las preferencias del usuario en ~/.local/state/noctalia/settings.toml
+# tienen prioridad sobre este archivo.
+
 [shell]
 polkit_agent = true
+avatar_path = "/usr/share/rakia/branding/rakia-avatar.png"
+
+[theme]
+mode = "dark"
+shell_mode = "dark"
+pure_black_dark = true
+
+[wallpaper]
+transition_on_startup = true
+
+[wallpaper.default]
+path = "/usr/share/rakia/wallpapers/rakia-default.jpg"
+
+[dock]
+enabled = true
+launcher_position = "start"
+launcher_custom_image = "/usr/share/rakia/branding/rakia-mark.png"
+launcher_custom_image_colorize = false

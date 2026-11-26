@@ -172,22 +172,27 @@ configuration.
 
 ### What it is
 
-Noga Linux is a minimal, CachyOS-based live ISO with **Niri + Noctalia + Noct** ready
+Noga Linux is a minimal, CachyOS-based live ISO with **Umbriel + Noctalia + Noct** ready (Niri fallback)
 to use.
-The desktop session is **Rakia**, a Niri + Noctalia + Noct configuration built around
+The desktop session is **Rakia**, an Umbriel + Noctalia + Noct configuration built around
 infinite scroll and infinite space. It appears as `rakia.desktop` in display managers. It keeps CachyOS repositories, keyring and package names, so updates continue to
 come from CachyOS. The branding is Noga; the packages are not rebuilt or renamed.
 
 Current status:
 
 - **live ISO works** on BIOS (syslinux) and UEFI (systemd-boot);
-- autologin into Niri + Noctalia as the `noga` user;
+- autologin into Umbriel + Noctalia as the `noga` user;
 - **slim** edition for Intel/AMD and **NVIDIA** edition with `nvidia-open`;
-- **the graphical installer (Calamares) is the next milestone**. The current ISO is a live
-  environment, not yet a complete installer.
+- **Calamares installer** (offline): installs the live system to disk, writes GRUB for
+  BIOS and UEFI, sets locale/keyboard/timezone to Madrid and configures autologin for the
+  user created during installation;
+- USB sticks and external drives are mounted automatically in the live session and in the
+  installed system;
+- default desktop: dark theme, Noga wallpaper, Kepler mark in the launcher/dock.
 
-> Do not install the current pre-release ISO over a disk you care about. Use a virtual
-> machine or a spare disk until the installer milestone is published.
+> The installer has been tested on BIOS and UEFI virtual machines. Back up your data before
+> installing on real hardware; the NVIDIA edition has not yet been tested on a physical
+> NVIDIA GPU.
 
 ### Download
 
@@ -272,7 +277,9 @@ kernel and bootloader with `sbctl` or use a shim; that is outside the current sc
 | Sudo | passwordless in the live session |
 | Rescue console | `Ctrl+Alt+F2`, login `root` (no password) |
 | Terminal | `Mod+Return` (foot) |
-| Launcher | `Mod+D` |
+| Launcher | `Super` (tap) |
+| Launcher (Niri fallback) | `Mod+D` or `Mod+Space` |
+| Dock | `Mod+Shift+D` |
 | Control center | `Mod+S` |
 | Noctalia settings | `Mod+Shift+S` |
 | Wallpaper | `Mod+Shift+Return` |
@@ -281,7 +288,7 @@ kernel and bootloader with `sbctl` or use a shim; that is outside the current sc
 | Screenshot (region) | `Print` |
 | Screenshot (window) | `Shift+Print` |
 | Screenshot (monitor) | `Ctrl+Print` |
-| Quit Niri | `Ctrl+Alt+Delete` |
+| Quit session | `Mod+Escape` |
 
 Wi-Fi:
 
@@ -319,13 +326,14 @@ installer with:
   `noct-gaming`, `noct-dev`, `noct-office`);
 - bootloader installation (systemd-boot or GRUB).
 
-Until then, use the live session to evaluate Noga and Noct. The installed-system path
-will be documented here as soon as the installer is testable.
+The installer has been tested on BIOS and UEFI virtual machines; back up your data before
+installing on real hardware.
 
 ### Test in QEMU
 
-Niri needs a real GL renderer. With QEMU’s plain `virtio-vga` (no 3D) Niri skips software
-EGL and you get a black screen even though the system booted. Use `virtio-vga-gl`:
+Umbriel and Niri need a real GL renderer. With QEMU’s plain `virtio-vga` (no 3D) the
+compositor skips software EGL and you get a black screen even though the system booted.
+Use `virtio-vga-gl`:
 
 ```bash
 cp /usr/share/edk2/x64/OVMF_VARS.4m.fd /tmp/OVMF_VARS.fd
