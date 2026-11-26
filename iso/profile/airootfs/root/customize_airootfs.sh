@@ -41,5 +41,8 @@ chmod 0440 /etc/sudoers.d/10-nocturne-live
 # ananicy no tiene sentido en el live; en el sistema instalado sí.
 ln -sf /dev/null /etc/systemd/system/ananicy-cpp.service
 
-# El keyring se crea en un tmpfs al arrancar (pacman-init.service), no aquí.
-rm -rf /etc/pacman.d/gnupg
+# Punto de montaje del llavero temporal. Se deja creado (vacío) para que
+# pacman-init pueda montar el tmpfs al arrancar y para que mkarchiso pueda
+# consultar la base de datos local al generar la lista de paquetes.
+install -d -m 0755 /etc/pacman.d/gnupg
+pacman-key --init >/dev/null 2>&1 || true

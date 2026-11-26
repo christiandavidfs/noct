@@ -272,6 +272,14 @@ nmcli device wifi list
 nmcli device wifi connect "SSID" password "password"
 ```
 
+USB sticks and external SSDs are detected and mounted automatically under
+`/run/media/$USER/<label>` (`udisks2` + `udiskie`). To unmount or power off:
+
+```bash
+udisksctl unmount -b /dev/sdX1
+udisksctl power-off -b /dev/sdX
+```
+
 The live system uses CachyOS + Arch repositories. The pacman keyring is created in a tmpfs
 at boot, so the ISO stays small and can still install packages:
 

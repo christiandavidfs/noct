@@ -99,6 +99,7 @@ animations {
 }
 
 spawn-at-startup "noctalia"
+spawn-at-startup "udiskie" "--automount" "--notify"
 
 window-rule {
     geometry-corner-radius 20

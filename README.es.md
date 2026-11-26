@@ -34,6 +34,7 @@ Más capturas y guías de instalación: [English](docs/INSTALL.md) · [Español]
 - **Modos de fondo**: los fondos fijos están protegidos; el Bing diario es opcional y actualiza escritorio y greeter.
 - **Instalador multi-distro** para Arch, Debian/Ubuntu, Fedora y openSUSE, con compilación desde fuente como respaldo.
 - **Atajos de captura** y configuración de capturas de Noctalia.
+- **Dispositivos extraíbles**: los USB y discos SSD externos se detectan y montan automáticamente con `udisks2` + `udiskie`.
 - **Lanzador Android** con inicio solo de widgets, carrusel de recientes, cajón de apps de texto y sincronización de tema/fondo.
 
 ## Requisitos

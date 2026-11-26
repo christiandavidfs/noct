@@ -1,0 +1,42 @@
+# Nocturne Linux — branding de Calamares.
+---
+componentName: nocturne
+
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+
+windowExpanding: normal
+windowSize: 1100px,720px
+windowPlacement: center
+
+sidebar: widget
+navigation: widget
+
+strings:
+    productName:         Nocturne Linux
+    shortProductName:    Nocturne
+    version:             2026.11
+    shortVersion:        2026.11
+    versionedName:       Nocturne Linux 2026.11
+    shortVersionedName:  Nocturne 2026.11
+    bootloaderEntryName: Nocturne
+    productUrl:          "https://github.com/christiandavidfs/noct"
+    supportUrl:          "https://github.com/christiandavidfs/noct/issues"
+    knownIssuesUrl:      "https://github.com/christiandavidfs/noct/issues"
+    releaseNotesUrl:     "https://github.com/christiandavidfs/noct/releases"
+
+images:
+    productLogo:    "logo.png"
+    productIcon:    "icon.png"
+    productWelcome: "welcome.png"
+
+style:
+    SidebarBackground:        "#0b1020"
+    SidebarText:              "#e8f6ec"
+    SidebarTextCurrent:       "#0b1020"
+    SidebarBackgroundCurrent: "#7cffb2"
+
+slideshow:
+    - "/etc/calamares/branding/nocturne/slide1.png"
+    - "/etc/calamares/branding/nocturne/slide2.png"
+    - "/etc/calamares/branding/nocturne/slide3.png"

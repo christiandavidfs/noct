@@ -48,6 +48,8 @@ iputils
 bluez
 bluez-utils
 wireless-regdb
+udisks2
+udiskie
 
 # Desktop
 niri
@@ -91,3 +93,6 @@ zram-generator
 cachyos-keyring
 cachyos-mirrorlist
 archlinux-keyring
+
+# Installer
+cachyos-calamares

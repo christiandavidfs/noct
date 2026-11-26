@@ -1,0 +1,3 @@
+#!/bin/sh
+# Lanza el instalador de Nocturne desde la sesión live.
+exec sudo -E calamares -c /etc/calamares/settings-noct.conf "$@"

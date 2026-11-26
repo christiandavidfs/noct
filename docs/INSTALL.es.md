@@ -274,6 +274,14 @@ nmcli device wifi list
 nmcli device wifi connect "SSID" password "contraseña"
 ```
 
+Los USB y discos SSD externos se detectan y montan automáticamente en
+`/run/media/$USER/<etiqueta>` (`udisks2` + `udiskie`). Para desmontar o apagar:
+
+```bash
+udisksctl unmount -b /dev/sdX1
+udisksctl power-off -b /dev/sdX
+```
+
 El sistema live usa los repositorios de CachyOS + Arch. El llavero de pacman se crea en un
 tmpfs al arrancar, así que la ISO sigue siendo pequeña y aun así puede instalar paquetes:
 

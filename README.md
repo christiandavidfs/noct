@@ -34,6 +34,7 @@ More screenshots and installation guides: [English](docs/INSTALL.md) · [Españo
 - **Wallpaper modes**: fixed wallpapers are protected; Bing daily is optional and updates both the desktop and the greeter.
 - **Cross-distro installer** for Arch, Debian/Ubuntu, Fedora and openSUSE, with a source-build fallback.
 - **Screenshot keybinds** and Noctalia’s screenshot configuration.
+- **Removable drives**: USB sticks and external SSDs are detected and mounted automatically with `udisks2` + `udiskie`.
 - **Android launcher** with a widget-only home, recents approximation, text app drawer and theme/wallpaper sync.
 
 ## Requirements

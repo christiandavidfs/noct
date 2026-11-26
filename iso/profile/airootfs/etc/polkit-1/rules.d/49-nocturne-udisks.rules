@@ -1,0 +1,15 @@
+// Nocturne Linux — permite montar y expulsar dispositivos extraíbles
+// a usuarios de wheel en la sesión local activa.
+polkit.addRule(function(action, subject) {
+    var allowed = [
+        "org.freedesktop.udisks2.filesystem-mount",
+        "org.freedesktop.udisks2.eject-media",
+        "org.freedesktop.udisks2.power-off-drive"
+    ];
+    if (allowed.indexOf(action.id) >= 0 &&
+        subject.isInGroup("wheel") &&
+        subject.local &&
+        subject.active) {
+        return polkit.Result.YES;
+    }
+});
