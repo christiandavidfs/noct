@@ -147,6 +147,12 @@ default_extent_fraction = 0.5
 blur = true
 blur_optimized = false
 
+# Los juegos de Steam/Proton llegan con content_type=game y se abren flotando;
+# a pantalla completa no tapan el mosaico del workspace.
+[[window_rule]]
+match.content_type = "game"
+default_fullscreen = true
+
 [[window_rule]]
 match.app_id = "^io\\.calamares\\.calamares$"
 default_floating = true

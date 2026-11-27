@@ -1,0 +1,21 @@
+#!/bin/sh
+# Prepara las bases de datos de repositorios en el primer arranque con red.
+#
+# mkarchiso borra /var/lib/pacman/sync al construir la imagen (para que quepa),
+# así que el live y el sistema instalado arrancan sin repositorios visibles.
+# Este servicio los descarga una sola vez, en cuanto hay conexión.
+set -eu
+
+[ -d /var/lib/pacman/sync ] || install -d /var/lib/pacman/sync
+[ -f /var/lib/pacman/sync/core.db ] && exit 0
+
+i=0
+while [ "$i" -lt 30 ]; do
+  if ping -c1 -W1 archlinux.org >/dev/null 2>&1; then
+    break
+  fi
+  i=$((i + 1))
+  sleep 1
+done
+
+pacman -Sy --noconfirm >/dev/null 2>&1 || true
