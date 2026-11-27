@@ -88,7 +88,8 @@ chown -hR 1000:1000 /home/noga
 # La ISO se mantiene por debajo del límite de 2 GiB de GitHub Releases:
 # se quitan páginas de manual, documentación y traducciones que no sean es/en.
 # Los paquetes siguen instalados; `pacman -S` puede restaurarlas.
-rm -rf /usr/share/doc/* /usr/share/man/* /usr/share/info/*
+find /usr/share/doc -mindepth 1 -maxdepth 1 ! -name noga -exec rm -rf {} + 2>/dev/null || true
+rm -rf /usr/share/man/* /usr/share/info/*
 find /usr/share/locale -mindepth 1 -maxdepth 1 -type d \
   ! -name 'es*' ! -name 'en*' -exec rm -rf {} + 2>/dev/null || true
 
