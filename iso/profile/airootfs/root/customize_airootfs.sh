@@ -85,6 +85,13 @@ install_noct_widget /etc/skel
 install_noct_widget /home/noga
 chown -hR 1000:1000 /home/noga
 
+# La ISO se mantiene por debajo del límite de 2 GiB de GitHub Releases:
+# se quitan páginas de manual, documentación y traducciones que no sean es/en.
+# Los paquetes siguen instalados; `pacman -S` puede restaurarlas.
+rm -rf /usr/share/doc/* /usr/share/man/* /usr/share/info/*
+find /usr/share/locale -mindepth 1 -maxdepth 1 -type d \
+  ! -name 'es*' ! -name 'en*' -exec rm -rf {} + 2>/dev/null || true
+
 # Contrato del escritorio: avisa si la configuración por defecto deja de ser
 # válida con la versión empaquetada de Umbriel o si Noctalia renombró un verbo.
 if command -v umbriel >/dev/null 2>&1; then
