@@ -18,8 +18,8 @@ impacto, no por dificultad.
 
 ## Fase 1 — Confianza y seguridad
 
-- [ ] **Greeter real**: login con contraseña en el sistema instalado; autologin como
-      opción explícita (live sí, disco no por defecto).
+- [x] **Greeter real**: Noctalia Greeter con contraseña en el sistema instalado;
+      `noga-greetd --autologin` queda como opción explícita (live sí).
 - [ ] **LUKS2 probado de punta a punta**: instalación, arranque, teclado español en
       cryptsetup, TRIM y hibernación.
 - [ ] **Secure Boot**: `sbctl`, claves propias, firma de GRUB/kernel en el instalador y
@@ -40,7 +40,8 @@ impacto, no por dificultad.
 
 ## Fase 3 — Actualizaciones reversibles
 
-- [ ] btrfs + **snapper** + **grub-btrfs**: snapshot antes/después de cada transacción.
+- [x] btrfs + **snapper** + **grub-btrfs**: snapshots y entradas de rollback en GRUB
+      cuando la raíz es btrfs (paquetes, config y hook del instalador).
 - [ ] Integrar `cachy-update` en Noctalia: badge, notificación y “reiniciar para aplicar”.
 - [ ] Estado del sistema en el panel: kernel, driver, versión, última actualización.
 - [ ] Documentar y probar el rollback completo (snapshot → GRUB → sistema anterior).
@@ -49,9 +50,9 @@ impacto, no por dificultad.
 
 - [ ] **Welcome de primer arranque** con `chwd` para drivers (NVIDIA en la slim), teclado,
       zona horaria, actualizar e instalar apps.
-- [ ] `fwupd` + `fwupd-refresh.timer`.
-- [ ] `power-profiles-daemon` y perfil por defecto en portátiles.
-- [ ] Impresión (`cups` + `system-config-printer`) e IPP sin configuración.
+- [x] `fwupd` + `fwupd-refresh.timer`.
+- [x] `power-profiles-daemon` habilitado.
+- [x] Impresión: `cups` con socket habilitado y `system-config-printer`.
 - [ ] Bluetooth con interfaz (Noctalia) y emparejamiento probado.
 - [ ] Optimus/`prime-run` documentado y probado en portátil híbrido.
 - [ ] Matriz de pruebas: Intel, AMD, NVIDIA, Wi-Fi, Ethernet, suspend/lid.
@@ -60,7 +61,7 @@ impacto, no por dificultad.
 
 - [ ] Plymouth + tema GRUB + greeter con la marca Kepler.
 - [ ] Bloqueo de pantalla al suspender y al cerrar sesión.
-- [ ] Documentación offline en `/usr/share/doc/noga` y enlaces desde el escritorio.
+- [x] Documentación offline en `/usr/share/doc/noga` (README, INSTALL, ROADMAP).
 - [ ] Fuentes, iconos, cursores, sonidos y OSD coherentes.
 - [ ] Fondos propios y pantalla de bienvenida.
 
@@ -68,10 +69,13 @@ impacto, no por dificultad.
 
 - [ ] CI que construya la ISO en cada tag y haga **smoke test en QEMU**: arranque BIOS y
       UEFI, llegada al escritorio, instalación desatendida y arranque del sistema instalado.
-- [ ] `shellcheck`, `clippy`, `cargo test` y `build.sh --check` en cada PR.
+- [x] `shellcheck`, `clippy`, `cargo test` y `bash -n` en CI.
+- [ ] `build.sh --check` dentro de un contenedor Arch/CachyOS en CI.
 - [ ] Versionado por fecha, changelog y notas de release generadas.
 - [ ] Espejo/torrent además de GitHub Releases.
-- [ ] SBOM y build reproducible (`SOURCE_DATE_EPOCH` ya está).
+- [x] Inventario de paquetes (`.pkglist.txt`) junto a la ISO; firma opcional con
+      `NOCT_SIGN_KEY` (minisign).
+- [ ] Build reproducible verificado (`SOURCE_DATE_EPOCH` ya está).
 
 ## Opcionales (no bloquean)
 

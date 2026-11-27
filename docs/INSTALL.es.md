@@ -460,6 +460,24 @@ engañoso.
 El instalador está probado en máquinas virtuales BIOS y UEFI; haz copia de tus datos
 antes de instalar en hardware real.
 
+### Login y snapshots
+
+El sistema instalado usa **Noctalia Greeter** y pide la contraseña del usuario. La sesión
+live mantiene el autologin. Para activarlo en un sistema instalado:
+
+```bash
+sudo noga-greetd --autologin
+```
+
+Si la raíz es **btrfs**, el instalador crea la configuración de `snapper` y habilita
+`snap-pac`, `snapper-timeline.timer`, `snapper-cleanup.timer` y `grub-btrfsd`. Cada
+transacción de `pacman` deja snapshots previos y posteriores, y GRUB los muestra, así que
+una actualización mala se puede revertir desde el menú de arranque. Con ext4 no se activa
+nada de esto.
+
+Se incluyen y habilitan `fwupd` (con refresco diario), `power-profiles-daemon` y CUPS. La
+documentación está disponible offline en `/usr/share/doc/noga`.
+
 ### Herramientas de CachyOS
 
 La imagen incluye las utilidades de escritorio de CachyOS desde los mismos repositorios:

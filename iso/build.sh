@@ -122,6 +122,12 @@ rm -rf -- "$STAGE"
 mkdir -p -- "$STAGE"
 cp -a -- "$PROFILE/." "$STAGE/"
 
+# Documentación offline dentro del sistema live/instalado.
+for doc in README.md docs/INSTALL.md docs/ROADMAP.md; do
+  [[ -f "$REPO_DIR/$doc" ]] || continue
+  install -Dm644 -- "$REPO_DIR/$doc" "$STAGE/airootfs/usr/share/doc/noga/$(basename -- "$doc")"
+done
+
 if [[ "$VARIANT" == nvidia ]]; then
   sed -i 's|^iso_name=.*|iso_name="noga-nvidia"|' "$STAGE/profiledef.sh"
   sed -i "s|^iso_label=.*|iso_label=\"NOGA_NV_$(date +%Y%m)\"|" "$STAGE/profiledef.sh"
@@ -160,6 +166,20 @@ if [[ -z "$iso_file" || ! -f "$iso_file" ]]; then
 fi
 
 sha256sum -- "$iso_file" >"$iso_file.sha256"
+
+# Inventario de paquetes junto a la ISO (SBOM mínimo).
+pkglist="$(find "$WORK" -maxdepth 2 -type f -name 'pkglist.*' -print -quit 2>/dev/null || true)"
+if [[ -n "$pkglist" ]]; then
+  cp -f -- "$pkglist" "$iso_file.pkglist.txt"
+fi
+
+# Firma opcional: NOCT_SIGN_KEY=/ruta/clave.sec minisign -S
+if [[ -n "${NOCT_SIGN_KEY:-}" ]] && command -v minisign >/dev/null 2>&1; then
+  minisign -S -s "$NOCT_SIGN_KEY" -m "$iso_file.sha256" \
+    -x "$iso_file.sha256.minisig" >/dev/null 2>&1 || \
+    printf 'Aviso: no se pudo firmar %s\n' "$iso_file.sha256" >&2
+fi
+
 ln -sfn -- "$(basename -- "$iso_file")" "$OUT/noga-$VARIANT.iso"
 
 printf '\nISO lista: %s\n' "$iso_file"

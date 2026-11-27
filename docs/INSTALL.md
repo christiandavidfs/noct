@@ -454,6 +454,23 @@ misleading filesystem error.
 The installer has been tested on BIOS and UEFI virtual machines; back up your data before
 installing on real hardware.
 
+### Login and snapshots
+
+The installed system uses **Noctalia Greeter** and asks for the user's password. The live
+session keeps autologin. To enable autologin on an installed system:
+
+```bash
+sudo noga-greetd --autologin
+```
+
+If the root filesystem is **btrfs**, the installer creates a `snapper` configuration and
+enables `snap-pac`, `snapper-timeline.timer`, `snapper-cleanup.timer` and `grub-btrfsd`.
+Every `pacman` transaction gets a pre/post snapshot and GRUB shows the snapshots, so a bad
+update can be rolled back from the boot menu. With ext4 none of this is enabled.
+
+`fwupd` (with a daily metadata refresh), `power-profiles-daemon` and CUPS are included and
+enabled. Documentation is available offline in `/usr/share/doc/noga`.
+
 ### CachyOS tools
 
 The image ships the CachyOS desktop utilities from the same repositories:

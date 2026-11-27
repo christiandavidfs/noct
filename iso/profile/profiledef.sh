@@ -30,6 +30,7 @@ file_permissions=(
   ["/usr/local/bin/noga-vmlinuz"]="0:0:755"
   ["/usr/local/bin/noga-bootloader"]="0:0:755"
   ["/usr/local/bin/noga-greetd"]="0:0:755"
+  ["/usr/local/bin/noga-snapshots"]="0:0:755"
   ["/root"]="0:0:750"
   ["/root/customize_airootfs.sh"]="0:0:755"
 )

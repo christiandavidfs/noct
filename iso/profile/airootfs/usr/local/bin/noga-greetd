@@ -1,11 +1,23 @@
 #!/bin/sh
-# Configura greetd para autologin con el primer usuario humano del sistema.
+# Configura greetd para el sistema instalado.
+#
+#   noga-greetd              → greeter de Noctalia (login con contraseña)
+#   noga-greetd --autologin  → entra directo al primer usuario
+#
+# El live usa su propia configuración con autologin; esto se ejecuta dentro del
+# sistema instalado desde Calamares.
 set -eu
+
+mode="greeter"
+if [ "${1:-}" = "--autologin" ]; then
+  mode="autologin"
+fi
 
 user="$(awk -F: '$3 >= 1000 && $3 < 60000 {print $1; exit}' /etc/passwd)"
 [ -n "$user" ] || user="noga"
 
-cat > /etc/greetd/config.toml <<EOF
+write_autologin() {
+  cat > /etc/greetd/config.toml <<EOF
 [terminal]
 vt = 1
 
@@ -13,4 +25,25 @@ vt = 1
 command = "start-umbriel"
 user = "$user"
 EOF
+}
+
+if [ "$mode" = "autologin" ] ||
+  ! command -v noctalia-greeter-session >/dev/null 2>&1; then
+  write_autologin
+else
+  if ! id -u greeter >/dev/null 2>&1; then
+    useradd -r -s /usr/bin/nologin -d /var/lib/noctalia-greeter greeter 2>/dev/null || true
+  fi
+  install -d -m 0750 /var/lib/noctalia-greeter
+  chown -R greeter:greeter /var/lib/noctalia-greeter 2>/dev/null || true
+  cat > /etc/greetd/config.toml <<'EOF'
+[terminal]
+vt = 1
+
+[default_session]
+command = "noctalia-greeter-session"
+user = "greeter"
+EOF
+fi
+
 chmod 644 /etc/greetd/config.toml

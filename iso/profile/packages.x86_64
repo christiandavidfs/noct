@@ -108,3 +108,16 @@ brave-bin
 thunar
 gvfs
 mousepad
+
+# Sistema
+fwupd
+power-profiles-daemon
+cups
+system-config-printer
+noctalia-greeter
+
+# Snapshots btrfs
+snapper
+snap-pac
+grub-btrfs
+btrfs-assistant
