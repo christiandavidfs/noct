@@ -184,6 +184,8 @@ Estado actual:
 - **la ISO live funciona** en BIOS (syslinux) y UEFI (systemd-boot);
 - autologin a Umbriel + Noctalia con el usuario `noga`;
 - edición **slim** para Intel/AMD y edición **NVIDIA** con `nvidia-open`;
+- **edición NVIDIA verificada en hardware NVIDIA real**: detecta los dos monitores y
+  `nvidia-utils`/NVML informa de la tarjeta;
 - **instalador Calamares** (offline): instala el sistema live en disco, escribe GRUB para
   BIOS y UEFI, fija locale/teclado/zona horaria en Madrid y configura el autologin del
   usuario creado durante la instalación;
@@ -192,8 +194,7 @@ Estado actual:
 - escritorio por defecto: tema oscuro, fondo de Noga y la marca Kepler en el lanzador/dock.
 
 > El instalador está probado en máquinas virtuales BIOS y UEFI. Haz copia de tus datos
-> antes de instalar en hardware real; la edición NVIDIA todavía no se ha probado en una
-> GPU NVIDIA física.
+> antes de instalar en hardware real. Secure Boot sigue sin probar.
 
 ### Descarga
 

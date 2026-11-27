@@ -231,6 +231,7 @@ Estado actual:
 
 - la ISO live arranca en BIOS (syslinux) y UEFI (systemd-boot), con autologin a Umbriel + Noctalia;
 - las ediciones slim y NVIDIA se generan desde el mismo perfil;
+- la edición NVIDIA arranca en hardware NVIDIA real (dos monitores, NVML/nvidia-utils);
 - el instalador gráfico (Calamares) instala el sistema offline y escribe GRUB para BIOS y UEFI;
 - los USB y discos externos se montan automáticamente en el live y en el sistema instalado;
 - el plugin de efectos de Noct está incluido en la imagen live y se instala con `noct effects widget`.

@@ -183,6 +183,8 @@ Current status:
 - **live ISO works** on BIOS (syslinux) and UEFI (systemd-boot);
 - autologin into Umbriel + Noctalia as the `noga` user;
 - **slim** edition for Intel/AMD and **NVIDIA** edition with `nvidia-open`;
+- **NVIDIA edition verified on physical NVIDIA hardware**: both monitors detected and
+  `nvidia-utils`/NVML reported the card;
 - **Calamares installer** (offline): installs the live system to disk, writes GRUB for
   BIOS and UEFI, sets locale/keyboard/timezone to Madrid and configures autologin for the
   user created during installation;
@@ -191,8 +193,7 @@ Current status:
 - default desktop: dark theme, Noga wallpaper, Kepler mark in the launcher/dock.
 
 > The installer has been tested on BIOS and UEFI virtual machines. Back up your data before
-> installing on real hardware; the NVIDIA edition has not yet been tested on a physical
-> NVIDIA GPU.
+> installing on real hardware. Secure Boot is still untested.
 
 ### Download
 
