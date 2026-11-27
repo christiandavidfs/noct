@@ -190,6 +190,8 @@ Current status:
   user created during installation;
 - USB sticks and external drives are mounted automatically in the live session and in the
   installed system;
+- **CachyOS tools included**: `cachy-update` (update notifier + daily timer),
+  `cachyos-packageinstaller` (app store with AUR) and `cachyos-kernel-manager`;
 - default desktop: dark theme, Noga wallpaper, Kepler mark in the launcher/dock.
 
 > The installer has been tested on BIOS and UEFI virtual machines. Back up your data before
@@ -438,6 +440,22 @@ Launch it from the application launcher (`Instalar Noga Linux`) or with
 
 The installer has been tested on BIOS and UEFI virtual machines; back up your data before
 installing on real hardware.
+
+### CachyOS tools
+
+The image ships the CachyOS desktop utilities from the same repositories:
+
+- **`cachy-update`** — update notifier. Its user timer (`arch-update.timer`) is enabled at
+  login and checks once a day (plus two minutes after boot), including pre/post-update
+  tasks. Run it by hand with `cachy-update`.
+- **`cachyos-packageinstaller`** — app store with AUR support (`CachyOS Package Installer`
+  in the launcher). Privilege prompts use Noctalia's built-in polkit agent, so no extra
+  agent is needed.
+- **`cachyos-kernel-manager`** — install and switch between Arch and CachyOS kernels
+  (`CachyOS Kernel Manager`).
+
+They update through CachyOS like any other package; nothing is pinned or rebuilt. `sudo
+pacman -S …` remains the canonical path.
 
 ### Test in QEMU
 

@@ -97,3 +97,8 @@ archlinux-keyring
 
 # Installer
 cachyos-calamares
+
+# CachyOS tools
+cachy-update
+cachyos-packageinstaller
+cachyos-kernel-manager

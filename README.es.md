@@ -234,6 +234,7 @@ Estado actual:
 - la edición NVIDIA arranca en hardware NVIDIA real (dos monitores, NVML/nvidia-utils);
 - el instalador gráfico (Calamares) instala el sistema offline y escribe GRUB para BIOS y UEFI;
 - una capa de compatibilidad valida y repara la configuración tras actualizar Umbriel/Noctalia;
+- herramientas de CachyOS incluidas: `cachy-update`, `cachyos-packageinstaller` y `cachyos-kernel-manager`;
 - los USB y discos externos se montan automáticamente en el live y en el sistema instalado;
 - el plugin de efectos de Noct está incluido en la imagen live y se instala con `noct effects widget`.
 

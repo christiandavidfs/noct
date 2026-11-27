@@ -234,6 +234,7 @@ Current status:
 - the NVIDIA edition boots on physical NVIDIA hardware (dual monitors, NVML/nvidia-utils);
 - the graphical installer (Calamares) installs the system offline and writes GRUB for BIOS and UEFI;
 - a compatibility layer validates and repairs the desktop configuration after Umbriel/Noctalia updates;
+- CachyOS tools included: `cachy-update`, `cachyos-packageinstaller` and `cachyos-kernel-manager`;
 - USB and external drives are mounted automatically in live and installed systems;
 - Noct’s effects plugin is included in the live image and can be installed with `noct effects widget`.
 

@@ -191,6 +191,8 @@ Estado actual:
   usuario creado durante la instalación;
 - los USB y discos externos se montan automáticamente en el live y en el sistema
   instalado;
+- **herramientas de CachyOS incluidas**: `cachy-update` (avisador de actualizaciones +
+  timer diario), `cachyos-packageinstaller` (tienda con AUR) y `cachyos-kernel-manager`;
 - escritorio por defecto: tema oscuro, fondo de Noga y la marca Kepler en el lanzador/dock.
 
 > El instalador está probado en máquinas virtuales BIOS y UEFI. Haz copia de tus datos
@@ -444,6 +446,23 @@ abierto.
 
 El instalador está probado en máquinas virtuales BIOS y UEFI; haz copia de tus datos
 antes de instalar en hardware real.
+
+### Herramientas de CachyOS
+
+La imagen incluye las utilidades de escritorio de CachyOS desde los mismos repositorios:
+
+- **`cachy-update`** — avisador de actualizaciones. Su timer de usuario
+  (`arch-update.timer`) queda activo al iniciar sesión y comprueba una vez al día (y dos
+  minutos después del arranque), con las tareas previas y posteriores a la actualización.
+  A mano: `cachy-update`.
+- **`cachyos-packageinstaller`** — tienda con soporte de AUR (`CachyOS Package Installer`
+  en el lanzador). Los permisos usan el agente polkit integrado de Noctalia, así que no
+  hace falta instalar otro.
+- **`cachyos-kernel-manager`** — instala y cambia entre kernels de Arch y de CachyOS
+  (`CachyOS Kernel Manager`).
+
+Se actualizan por CachyOS como cualquier paquete; nada está fijado ni recompilado. `sudo
+pacman -S …` sigue siendo la vía canónica.
 
 ### Probar en QEMU
 
