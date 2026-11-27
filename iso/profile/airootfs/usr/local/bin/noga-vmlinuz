@@ -1,0 +1,31 @@
+#!/bin/sh
+# Copia el kernel del sistema live al sistema instalado.
+#
+# En el arranque normal está en la ISO (/run/archiso/bootmnt) o en el árbol que
+# haya extraído el gestor de arranque (YUMI). Si no aparece, se usa el kernel
+# que está ejecutando el live, que es el mismo que instala el perfil.
+set -eu
+
+ROOT="${1:-}"
+[ -n "$ROOT" ] || { printf 'uso: noga-vmlinuz <raíz instalada>\n' >&2; exit 2; }
+
+BOOTMNT="${NOGA_BOOTMNT:-/run/archiso/bootmnt}"
+ISO_KERNEL="${NOGA_ISO_KERNEL:-$BOOTMNT/noga/boot/x86_64/vmlinuz-linux}"
+LIVE_KERNEL="${NOGA_LIVE_KERNEL:-/usr/lib/modules/$(uname -r)/vmlinuz}"
+
+if [ -f "$ISO_KERNEL" ]; then
+  SRC="$ISO_KERNEL"
+else
+  SRC="$(find "$BOOTMNT" -maxdepth 6 -name vmlinuz-linux -print -quit 2>/dev/null || true)"
+  if [ -z "$SRC" ] && [ -f "$LIVE_KERNEL" ]; then
+    SRC="$LIVE_KERNEL"
+  fi
+fi
+
+if [ -z "${SRC:-}" ] || [ ! -f "$SRC" ]; then
+  printf 'noga-install: no se encuentra el kernel (ni %s ni %s)\n' "$ISO_KERNEL" "$LIVE_KERNEL" >&2
+  exit 1
+fi
+
+install -Dm644 "$SRC" "$ROOT/boot/vmlinuz-linux"
+printf 'noga-install: kernel instalado desde %s\n' "$SRC"

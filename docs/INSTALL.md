@@ -438,6 +438,11 @@ BIOS or UEFI. USB and external drives are mounted automatically in the installed
 Launch it from the application launcher (`Instalar Noga Linux`) or with
 `noga-install` in a terminal. The dock is hidden automatically while Calamares is open.
 
+The installer locates the live image wherever the boot loader left it, so it also works
+when the ISO is booted through Ventoy (normal or memdisk mode), YUMI or a plain USB
+stick. If the source cannot be found, it stops with a clear message instead of a
+misleading filesystem error.
+
 The installer has been tested on BIOS and UEFI virtual machines; back up your data before
 installing on real hardware.
 

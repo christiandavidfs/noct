@@ -137,6 +137,13 @@ else
 fi
 
 if ((CLEAN)); then
+  # Un build interrumpido puede dejar /proc, /sys o /dev montados dentro del
+  # airootfs; si no se desmontan, el siguiente build falla al limpiar.
+  for mnt in "$WORK"/*/airootfs/{proc,sys,dev/pts,dev,run}; do
+    if mountpoint -q -- "$mnt" 2>/dev/null; then
+      umount -R -- "$mnt" 2>/dev/null || umount -l -- "$mnt" 2>/dev/null || true
+    fi
+  done
   rm -rf -- "$WORK"
 fi
 mkdir -p -- "$WORK" "$OUT"

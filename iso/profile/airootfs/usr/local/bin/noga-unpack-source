@@ -1,0 +1,53 @@
+#!/bin/sh
+# Elige la fuente que Calamares descomprimirá en el disco.
+#
+# El caso normal es la ISO montada en /run/archiso/bootmnt. Algunos métodos de
+# arranque no dejan el árbol en la ruta esperada:
+#   - Ventoy (modo memdisk) o copytoram dejan bootmnt vacío;
+#   - YUMI extrae la ISO y anida el contenido en su propia carpeta;
+#   - el arranque por loopback puede montar el ISO en otro sitio.
+# En todos esos casos se busca el squashfs y, si no aparece, se instala desde
+# el squashfs ya montado que sirve de raíz a la sesión live.
+set -eu
+
+BOOTMNT="${NOGA_BOOTMNT:-/run/archiso/bootmnt}"
+SFS="${NOGA_SFS:-$BOOTMNT/noga/x86_64/airootfs.sfs}"
+CONFIG="${NOGA_CONFIG:-/etc/calamares/modules/unpackfs-noct.conf}"
+
+set_source() {
+  sed -i "s|source: .*|source: \"$1\"|" "$CONFIG"
+  sed -i "s|sourcefs: .*|sourcefs: \"$2\"|" "$CONFIG"
+}
+
+if [ -f "$SFS" ]; then
+  printf 'noga-install: fuente %s\n' "$SFS"
+  exit 0
+fi
+
+FOUND="$(find "$BOOTMNT" -maxdepth 6 -name airootfs.sfs -print -quit 2>/dev/null || true)"
+if [ -n "$FOUND" ]; then
+  printf 'noga-install: %s no existe; usando %s\n' "$SFS" "$FOUND"
+  set_source "$FOUND" squashfs
+  exit 0
+fi
+
+# El squashfs montado cambia de ruta según la versión de archiso.
+MNT="${NOGA_MNT:-}"
+if [ -z "$MNT" ]; then
+  for candidate in /run/archiso/airootfs /run/archiso/sfs/airootfs; do
+    if mountpoint -q "$candidate" 2>/dev/null || [ -d "$candidate/etc" ]; then
+      MNT="$candidate"
+      break
+    fi
+  done
+fi
+
+if [ -n "$MNT" ]; then
+  printf 'noga-install: %s no existe; se instala desde %s\n' "$SFS" "$MNT"
+  set_source "$MNT" file
+  exit 0
+fi
+
+printf 'noga-install: no se encuentra el sistema live (ni %s, ni un airootfs.sfs en %s, ni un squashfs montado)\n' \
+  "$SFS" "$BOOTMNT" >&2
+exit 1

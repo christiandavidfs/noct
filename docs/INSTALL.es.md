@@ -444,6 +444,11 @@ Puedes abrirlo desde el lanzador de aplicaciones (`Instalar Noga Linux`) o con
 `noga-install` en una terminal. El dock se oculta automáticamente mientras Calamares está
 abierto.
 
+El instalador localiza la imagen live allí donde la haya dejado el gestor de arranque, así
+que también funciona con Ventoy (modo normal o memdisk), YUMI o un USB quemado. Si no
+encuentra la fuente, se detiene con un mensaje claro en vez de un error de filesystem
+engañoso.
+
 El instalador está probado en máquinas virtuales BIOS y UEFI; haz copia de tus datos
 antes de instalar en hardware real.
 
