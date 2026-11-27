@@ -319,6 +319,42 @@ To toggle it with a key, add this under `[keybinds]` in the same file:
 "Mod+Shift+Slash" = "cheatsheet-toggle"
 ```
 
+### Add your own shortcuts
+
+Umbriel reads user shortcuts from **`~/.config/umbriel/config.toml`**, inside the
+`[keybinds]` table. The file is watched, so saving it applies the change; validate or
+reload manually with:
+
+```bash
+umbriel config validate
+umbriel msg config-reload
+```
+
+Examples:
+
+```toml
+[keybinds]
+"Mod+Shift+Slash" = "cheatsheet-toggle"
+"Mod+B" = "spawn foot"
+"Mod+V" = "spawn noctalia msg panel-toggle clipboard"
+"Mod+Shift+E" = { action = "spawn noctalia msg screenshot-region", repeat = false }
+```
+
+`Mod` is Super in a native session. The value is either an Umbriel action name
+(`window-close`, `workspace-switch 2`, `cheatsheet-toggle`, …) or a command starting with
+`spawn`. Run `umbriel msg --help` for the action list. Use the table form with
+`repeat = false` for launchers.
+
+For the fallback Niri session, edit **`~/.config/niri/config.kdl`** inside `binds { … }`:
+
+```kdl
+Mod+B { spawn "foot"; }
+Mod+Shift+Slash { show-hotkey-overlay; }
+```
+
+The defaults used for new users live in `/etc/skel/.config/umbriel/config.toml` (Umbriel)
+and `/etc/skel/.config/niri/config.kdl` (Niri fallback). The per-user file always wins.
+
 Wi-Fi:
 
 ```bash

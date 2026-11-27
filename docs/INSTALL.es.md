@@ -321,6 +321,45 @@ Para abrirlo con un atajo, añade esto bajo `[keybinds]` en el mismo archivo:
 "Mod+Shift+Slash" = "cheatsheet-toggle"
 ```
 
+### Añadir tus propios atajos
+
+Umbriel lee los atajos del usuario de **`~/.config/umbriel/config.toml`**, dentro de la
+tabla `[keybinds]`. El archivo se vigila, así que al guardarlo se aplica el cambio; para
+validar o recargar a mano:
+
+```bash
+umbriel config validate
+umbriel msg config-reload
+```
+
+Ejemplos:
+
+```toml
+[keybinds]
+"Mod+Shift+Slash" = "cheatsheet-toggle"
+"Mod+B" = "spawn foot"
+"Mod+V" = "spawn noctalia msg panel-toggle clipboard"
+"Mod+Shift+E" = { action = "spawn noctalia msg screenshot-region", repeat = false }
+```
+
+`Mod` es Super en una sesión nativa. El valor puede ser una acción de Umbriel
+(`window-close`, `workspace-switch 2`, `cheatsheet-toggle`, …) o un comando que empiece
+por `spawn`. Ejecuta `umbriel msg --help` para ver la lista de acciones. Usa la forma de
+tabla con `repeat = false` para lanzadores.
+
+Para la sesión de respaldo Niri, edita **`~/.config/niri/config.kdl`** dentro de
+`binds { … }`:
+
+```kdl
+Mod+B { spawn "foot"; }
+Mod+Shift+Slash { show-hotkey-overlay; }
+```
+
+Los valores por defecto para usuarios nuevos están en
+`/etc/skel/.config/umbriel/config.toml` (Umbriel) y
+`/etc/skel/.config/niri/config.kdl` (respaldo Niri). El archivo del usuario siempre tiene
+prioridad.
+
 Wi-Fi:
 
 ```bash
