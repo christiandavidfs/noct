@@ -291,6 +291,36 @@ firma el kernel y el bootloader con `sbctl` o usa un shim; queda fuera del alcan
 | Captura (monitor) | `Ctrl+Print` |
 | Salir de la sesión | `Mod+Escape` |
 
+### Cheatsheet de Umbriel
+
+El overlay de atajos está desactivado al arrancar para no tapar el escritorio
+(`[general].show_cheatsheet = false`). Para abrirlo a mano desde una terminal:
+
+```bash
+umbriel msg cheatsheet-open     # abrir
+umbriel msg cheatsheet-toggle   # abrir/cerrar
+umbriel msg cheatsheet-close    # cerrar
+```
+
+Si `umbriel msg` no encuentra el socket, indícalo explícitamente:
+
+```bash
+UMBRIEL_SOCKET=/run/user/$(id -u)/umbriel-wayland-0.sock umbriel msg cheatsheet-open
+```
+
+Para que aparezca en cada inicio de sesión, pon `show_cheatsheet = true` en
+`~/.config/umbriel/config.toml` y recarga:
+
+```bash
+umbriel msg config-reload
+```
+
+Para abrirlo con un atajo, añade esto bajo `[keybinds]` en el mismo archivo:
+
+```toml
+"Mod+Shift+Slash" = "cheatsheet-toggle"
+```
+
 Wi-Fi:
 
 ```bash
@@ -317,15 +347,14 @@ sudo pacman -Syu
 
 ### Instalar en disco
 
-La integración con Calamares está en curso. Cuando llegue, la ISO arrancará en un
-instalador gráfico con:
+La ISO incluye un instalador Calamares offline. Particiona el disco elegido, crea el
+usuario, aplica idioma/teclado/zona horaria, descomprime el sistema live e instala GRUB
+para BIOS o UEFI. Los USB y discos externos también se montan automáticamente en el
+sistema instalado.
 
-- selección de disco y cifrado;
-- creación de usuario;
-- idioma y teclado;
-- grupos de paquetes de Noga (`noct-base`, `noct-desktop`, `noct-tools`, `noct-nvidia`,
-  `noct-gaming`, `noct-dev`, `noct-office`);
-- instalación del bootloader (systemd-boot o GRUB).
+Puedes abrirlo desde el lanzador de aplicaciones (`Instalar Noga Linux`) o con
+`noga-install` en una terminal. El dock se oculta automáticamente mientras Calamares está
+abierto.
 
 El instalador está probado en máquinas virtuales BIOS y UEFI; haz copia de tus datos
 antes de instalar en hardware real.
