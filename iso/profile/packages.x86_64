@@ -102,3 +102,9 @@ cachyos-calamares
 cachy-update
 cachyos-packageinstaller
 cachyos-kernel-manager
+
+# Aplicaciones base
+brave-bin
+thunar
+gvfs
+mousepad

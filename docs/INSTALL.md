@@ -192,6 +192,8 @@ Current status:
   installed system;
 - **CachyOS tools included**: `cachy-update` (update notifier + daily timer),
   `cachyos-packageinstaller` (app store with AUR) and `cachyos-kernel-manager`;
+- **base apps**: Brave, Thunar, mousepad, and the `noct/effects` widget enabled in
+  Noctalia;
 - default desktop: dark theme, Noga wallpaper, Kepler mark in the launcher/dock.
 - Umbriel falls back to software rendering when the machine has no hardware GL
   (VMware or QEMU without 3D acceleration), so the live still reaches the desktop.
@@ -283,6 +285,8 @@ kernel and bootloader with `sbctl` or use a shim; that is outside the current sc
 | Sudo | passwordless in the live session |
 | Rescue console | `Ctrl+Alt+F2`, login `root` (no password) |
 | Terminal | `Mod+Return` (foot) |
+| Browser | `Mod+B` (Brave) |
+| File manager | `Mod+E` (Thunar) |
 | Launcher | `Super` (tap) |
 | Launcher (Niri fallback) | `Mod+D` or `Mod+Space` |
 | Dock | `Mod+Shift+D` |
@@ -342,7 +346,7 @@ Examples:
 ```toml
 [keybinds]
 "Mod+Shift+Slash" = "cheatsheet-toggle"
-"Mod+B" = "spawn foot"
+"Mod+Alt+B" = "spawn foot"
 "Mod+V" = "spawn noctalia msg panel-toggle clipboard"
 "Mod+Shift+E" = { action = "spawn noctalia msg screenshot-region", repeat = false }
 ```
@@ -355,7 +359,7 @@ Examples:
 For the fallback Niri session, edit **`~/.config/niri/config.kdl`** inside `binds { … }`:
 
 ```kdl
-Mod+B { spawn "foot"; }
+Mod+Alt+B { spawn "foot"; }
 Mod+Shift+Slash { show-hotkey-overlay; }
 ```
 
@@ -463,8 +467,9 @@ The image ships the CachyOS desktop utilities from the same repositories:
 - **`cachyos-kernel-manager`** — install and switch between Arch and CachyOS kernels
   (`CachyOS Kernel Manager`).
 
-They update through CachyOS like any other package; nothing is pinned or rebuilt. `sudo
-pacman -S …` remains the canonical path.
+The live and the installed system keep the CachyOS/Arch sync databases, so `pacman`
+knows the repositories from the first boot (`sudo pacman -S …`). They update through
+CachyOS like any other package; nothing is pinned or rebuilt.
 
 ### Test in QEMU
 

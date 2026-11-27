@@ -235,6 +235,7 @@ Current status:
 - the graphical installer (Calamares) installs the system offline and writes GRUB for BIOS and UEFI;
 - a compatibility layer validates and repairs the desktop configuration after Umbriel/Noctalia updates;
 - CachyOS tools included: `cachy-update`, `cachyos-packageinstaller` and `cachyos-kernel-manager`;
+- Brave, Thunar and mousepad included, and pacman already knows the CachyOS repositories;
 - USB and external drives are mounted automatically in live and installed systems;
 - Noct’s effects plugin is included in the live image and can be installed with `noct effects widget`.
 

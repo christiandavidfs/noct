@@ -193,6 +193,8 @@ Estado actual:
   instalado;
 - **herramientas de CachyOS incluidas**: `cachy-update` (avisador de actualizaciones +
   timer diario), `cachyos-packageinstaller` (tienda con AUR) y `cachyos-kernel-manager`;
+- **apps base**: Brave, Thunar, mousepad y el widget `noct/effects` habilitado en
+  Noctalia;
 - escritorio por defecto: tema oscuro, fondo de Noga y la marca Kepler en el lanzador/dock.
 - Umbriel cae a renderizado software cuando no hay GL por hardware (VMware o QEMU
   sin aceleración 3D), así que el live llega igualmente al escritorio.
@@ -285,6 +287,8 @@ firma el kernel y el bootloader con `sbctl` o usa un shim; queda fuera del alcan
 | Sudo | sin contraseña en la sesión live |
 | Consola de rescate | `Ctrl+Alt+F2`, login `root` (sin contraseña) |
 | Terminal | `Mod+Return` (foot) |
+| Navegador | `Mod+B` (Brave) |
+| Gestor de archivos | `Mod+E` (Thunar) |
 | Lanzador | `Super` (pulsación) |
 | Lanzador (fallback Niri) | `Mod+D` o `Mod+Space` |
 | Dock | `Mod+Shift+D` |
@@ -344,7 +348,7 @@ Ejemplos:
 ```toml
 [keybinds]
 "Mod+Shift+Slash" = "cheatsheet-toggle"
-"Mod+B" = "spawn foot"
+"Mod+Alt+B" = "spawn foot"
 "Mod+V" = "spawn noctalia msg panel-toggle clipboard"
 "Mod+Shift+E" = { action = "spawn noctalia msg screenshot-region", repeat = false }
 ```
@@ -358,7 +362,7 @@ Para la sesión de respaldo Niri, edita **`~/.config/niri/config.kdl`** dentro d
 `binds { … }`:
 
 ```kdl
-Mod+B { spawn "foot"; }
+Mod+Alt+B { spawn "foot"; }
 Mod+Shift+Slash { show-hotkey-overlay; }
 ```
 
@@ -470,8 +474,9 @@ La imagen incluye las utilidades de escritorio de CachyOS desde los mismos repos
 - **`cachyos-kernel-manager`** — instala y cambia entre kernels de Arch y de CachyOS
   (`CachyOS Kernel Manager`).
 
-Se actualizan por CachyOS como cualquier paquete; nada está fijado ni recompilado. `sudo
-pacman -S …` sigue siendo la vía canónica.
+El live y el sistema instalado conservan las bases de datos de CachyOS/Arch, así que
+`pacman` conoce los repositorios desde el primer arranque (`sudo pacman -S …`). Se
+actualizan por CachyOS como cualquier paquete; nada está fijado ni recompilado.
 
 ### Probar en QEMU
 

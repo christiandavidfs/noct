@@ -59,8 +59,25 @@ if [ -f /etc/default/grub ]; then
 fi
 
 # Punto de montaje del llavero temporal. Se deja creado (vacío) para que
-# pacman-init pueda montar el tmpfs al arrancar. Sin bases de datos de sync,
-# mkarchiso no intenta verificar firmas al generar la lista de paquetes.
+# pacman-init pueda montar el tmpfs al arrancar.
 install -d -m 0755 /etc/pacman.d/gnupg
 find /etc/pacman.d/gnupg -mindepth 1 -delete
-rm -rf /var/lib/pacman/sync
+
+# Las bases de datos de sync se conservan: así el sistema instalado (y el live)
+# reconocen los repositorios de CachyOS/Arch desde el primer arranque, sin
+# depender de que el usuario ejecute `pacman -Sy` a mano.
+
+# Widget de efectos de Noct, instalado y habilitado en el perfil por defecto y
+# en la sesión live. Noctalia no está corriendo, pero deja el estado escrito.
+install_noct_widget() {
+  local home="$1"
+  [ -d "$home" ] || return 0
+  [ -x /usr/local/bin/noct ] || return 0
+  HOME="$home" \
+    XDG_CONFIG_HOME="$home/.config" \
+    XDG_DATA_HOME="$home/.local/share" \
+    timeout 20 /usr/local/bin/noct effects widget >/dev/null 2>&1 || true
+}
+install_noct_widget /etc/skel
+install_noct_widget /home/noga
+chown -hR 1000:1000 /home/noga

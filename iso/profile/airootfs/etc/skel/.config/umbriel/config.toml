@@ -52,6 +52,8 @@ default_extent_fraction = 0.5
 # Aplicaciones y sesión
 "Mod" = "spawn noct msg panel-toggle launcher"
 "Mod+Return" = { action = "spawn foot", repeat = false }
+"Mod+B" = { action = "spawn brave", repeat = false }
+"Mod+E" = { action = "spawn thunar", repeat = false }
 "Mod+D" = "spawn noct msg panel-toggle launcher"
 "Mod+Q" = { action = "window-close", repeat = false }
 "Mod+Escape" = "session-quit"
