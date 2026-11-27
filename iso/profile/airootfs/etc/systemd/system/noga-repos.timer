@@ -2,8 +2,8 @@
 Description=Noga: prepara los repositorios tras el arranque
 
 [Timer]
-OnBootSec=25s
-OnUnitActiveSec=1h
+OnActiveSec=30s
+OnUnitActiveSec=15min
 AccuracySec=1min
 Persistent=false
 
