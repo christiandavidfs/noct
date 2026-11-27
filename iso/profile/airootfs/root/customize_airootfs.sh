@@ -63,9 +63,12 @@ fi
 install -d -m 0755 /etc/pacman.d/gnupg
 find /etc/pacman.d/gnupg -mindepth 1 -delete
 
-# Las bases de datos de sync se conservan: así el sistema instalado (y el live)
-# reconocen los repositorios de CachyOS/Arch desde el primer arranque, sin
-# depender de que el usuario ejecute `pacman -Sy` a mano.
+# Arch trae los servidores de /etc/pacman.d/mirrorlist comentados; se activan
+# unos cuantos para que pacman pueda sincronizar core/extra/multilib.
+if [ -f /etc/pacman.d/mirrorlist ] && ! grep -q '^Server' /etc/pacman.d/mirrorlist; then
+  awk 'BEGIN{n=0} /^#Server/ && n<6 {sub(/^#/,""); n++} {print}' /etc/pacman.d/mirrorlist > /etc/pacman.d/mirrorlist.tmp
+  mv /etc/pacman.d/mirrorlist.tmp /etc/pacman.d/mirrorlist
+fi
 
 # Widget de efectos de Noct, instalado y habilitado en el perfil por defecto y
 # en la sesión live. Noctalia no está corriendo, pero deja el estado escrito.

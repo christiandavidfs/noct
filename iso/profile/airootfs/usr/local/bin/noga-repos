@@ -9,6 +9,18 @@ set -eu
 [ -d /var/lib/pacman/sync ] || install -d /var/lib/pacman/sync
 [ -f /var/lib/pacman/sync/core.db ] && exit 0
 
+# Arch trae los servidores de /etc/pacman.d/mirrorlist comentados; sin al menos
+# uno activo, pacman no puede sincronizar core/extra/multilib.
+enable_servers() {
+  list="$1"
+  [ -f "$list" ] || return 0
+  grep -q '^Server' "$list" && return 0
+  awk 'BEGIN{n=0} /^#Server/ && n<6 {sub(/^#/,""); n++} {print}' "$list" > "$list.tmp" &&
+    mv "$list.tmp" "$list"
+}
+enable_servers /etc/pacman.d/mirrorlist
+enable_servers /etc/pacman.d/cachyos-mirrorlist
+
 i=0
 while [ "$i" -lt 30 ]; do
   if ping -c1 -W1 archlinux.org >/dev/null 2>&1; then
