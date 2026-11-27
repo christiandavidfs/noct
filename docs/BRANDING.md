@@ -40,7 +40,7 @@ Marca elegida: **pequeño dodecaedro estrellado** `{5/2,5}`.
 ## Fondo y tema
 
 - Fondo por defecto: `iso/profile/airootfs/usr/share/rakia/wallpapers/rakia-default.jpg`
-  (el fondo oscuro técnico actual del autor, 16:9).
+  (imagen libre de Wallhaven, 16:9). Se queda como fondo de Rakia.
 - Noctalia arranca en **modo oscuro** (`mode = "dark"`, `shell_mode = "dark"`).
 - El fondo negro liso anterior queda retirado.
 
