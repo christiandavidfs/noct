@@ -108,6 +108,7 @@ brave-bin
 thunar
 gvfs
 mousepad
+zenity
 
 # Sistema
 fwupd

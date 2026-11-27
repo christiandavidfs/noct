@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Noga Welcome
+Name[es]=Bienvenida a Noga
+Comment=Common tasks for Noga Linux
+Comment[es]=Tareas habituales de Noga Linux
+Exec=noga-welcome
+Icon=/usr/share/rakia/branding/rakia-icon.png
+Terminal=false
+Categories=System;Settings;
+Keywords=noga;welcome;drivers;update;

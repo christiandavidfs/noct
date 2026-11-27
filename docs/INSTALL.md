@@ -471,6 +471,10 @@ update can be rolled back from the boot menu. With ext4 none of this is enabled.
 `fwupd` (with a daily metadata refresh), `power-profiles-daemon` and CUPS are included and
 enabled. Documentation is available offline in `/usr/share/doc/noga`.
 
+**Noga Welcome** (launcher: *Bienvenida a Noga*) collects the usual first steps: update,
+drivers with `chwd`, LibreOffice, Steam/Lutris, development tools and the documentation.
+The `multilib` repository is enabled so Steam and 32-bit games can be installed normally.
+
 ### CachyOS tools
 
 The image ships the CachyOS desktop utilities from the same repositories:

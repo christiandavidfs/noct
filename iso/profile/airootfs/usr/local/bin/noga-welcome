@@ -1,0 +1,58 @@
+#!/bin/bash
+# Bienvenida a Noga: tareas habituales sin tocar la terminal.
+set -eu
+
+if [[ "${LANG:-}" == es* ]]; then
+  TEXT="¿Qué quieres hacer?"
+  COL="Acción"
+  M_UPDATE="Actualizar el sistema"
+  M_DRIVERS="Instalar o cambiar drivers"
+  M_OFFICE="Instalar LibreOffice"
+  M_GAMING="Instalar Steam, Lutris y MangoHud"
+  M_DEV="Instalar herramientas de desarrollo"
+  M_DOCS="Ver la documentación"
+  M_ABOUT="Acerca de Noga"
+else
+  TEXT="What do you want to do?"
+  COL="Action"
+  M_UPDATE="Update the system"
+  M_DRIVERS="Install or switch drivers"
+  M_OFFICE="Install LibreOffice"
+  M_GAMING="Install Steam, Lutris and MangoHud"
+  M_DEV="Install development tools"
+  M_DOCS="Read the documentation"
+  M_ABOUT="About Noga"
+fi
+
+run_term() {
+  foot -e sh -c "$1" >/dev/null 2>&1 || true
+}
+
+choice="$(zenity --list --title="Noga Linux" --text="$TEXT" --column="$COL" \
+  --width=620 --height=460 \
+  "$M_UPDATE" "$M_DRIVERS" "$M_OFFICE" "$M_GAMING" "$M_DEV" "$M_DOCS" "$M_ABOUT")" || exit 0
+
+case "$choice" in
+  "$M_UPDATE")
+    run_term "cachy-update"
+    ;;
+  "$M_DRIVERS")
+    run_term "pkexec chwd -a"
+    ;;
+  "$M_OFFICE")
+    run_term "pkexec pacman -S --needed libreoffice-fresh"
+    ;;
+  "$M_GAMING")
+    run_term "pkexec pacman -S --needed steam lutris gamemode mangohud"
+    ;;
+  "$M_DEV")
+    run_term "pkexec pacman -S --needed git base-devel"
+    ;;
+  "$M_DOCS")
+    xdg-open /usr/share/doc/noga/INSTALL.md >/dev/null 2>&1 || true
+    ;;
+  "$M_ABOUT")
+    zenity --info --title="Noga Linux" --width=520 \
+      --text="Noga Linux\nRakia desktop: Umbriel + Noctalia + Noct\n\nhttps://github.com/christiandavidfs/noct" || true
+    ;;
+esac

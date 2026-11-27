@@ -48,8 +48,8 @@ impacto, no por dificultad.
 
 ## Fase 4 — Hardware
 
-- [ ] **Welcome de primer arranque** con `chwd` para drivers (NVIDIA en la slim), teclado,
-      zona horaria, actualizar e instalar apps.
+- [x] **Noga Welcome** (zenity): actualizar, drivers con `chwd`, LibreOffice, gaming,
+      desarrollo y documentación. Multilib habilitado para Steam.
 - [x] `fwupd` + `fwupd-refresh.timer`.
 - [x] `power-profiles-daemon` habilitado.
 - [x] Impresión: `cups` con socket habilitado y `system-config-printer`.

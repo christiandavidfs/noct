@@ -478,6 +478,10 @@ nada de esto.
 Se incluyen y habilitan `fwupd` (con refresco diario), `power-profiles-daemon` y CUPS. La
 documentación está disponible offline en `/usr/share/doc/noga`.
 
+**Bienvenida a Noga** (en el lanzador) reúne los primeros pasos: actualizar, drivers con
+`chwd`, LibreOffice, Steam/Lutris, herramientas de desarrollo y la documentación. El
+repositorio `multilib` está habilitado para poder instalar Steam y juegos de 32 bits.
+
 ### Herramientas de CachyOS
 
 La imagen incluye las utilidades de escritorio de CachyOS desde los mismos repositorios:
