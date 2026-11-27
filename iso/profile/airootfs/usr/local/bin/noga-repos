@@ -30,4 +30,13 @@ while [ "$i" -lt 30 ]; do
   sleep 1
 done
 
-pacman -Sy --noconfirm >/dev/null 2>&1 || true
+i=0
+while [ "$i" -lt 3 ]; do
+  pacman -Sy --noconfirm >/dev/null 2>&1 || true
+  [ -f /var/lib/pacman/sync/core.db ] && exit 0
+  i=$((i + 1))
+  sleep 10
+done
+
+# Si no se pudo, el timer reintenta en 5 minutos.
+[ -f /var/lib/pacman/sync/core.db ]
