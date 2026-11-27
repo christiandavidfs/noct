@@ -25,6 +25,7 @@ file_permissions=(
   ["/etc/sudoers.d/10-noga-live"]="0:0:440"
   ["/usr/local/bin/noct"]="0:0:755"
   ["/usr/local/bin/noga-install"]="0:0:755"
+  ["/usr/local/bin/rakia-compat"]="0:0:755"
   ["/usr/local/bin/noga-bootloader"]="0:0:755"
   ["/usr/local/bin/noga-greetd"]="0:0:755"
   ["/root"]="0:0:750"

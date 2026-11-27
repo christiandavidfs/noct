@@ -10,10 +10,18 @@ XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP:-niri}"
 export XDG_RUNTIME_DIR WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS QT_QPA_PLATFORM XDG_CURRENT_DESKTOP
 
 # El dock ocupa el borde inferior y tapa los botones de Calamares.
-# Se oculta durante la instalación y se restaura al salir.
-if command -v noctalia >/dev/null 2>&1; then
-  noctalia msg dock-hide >/dev/null 2>&1 || true
-  trap 'noctalia msg dock-show >/dev/null 2>&1 || true' EXIT INT TERM
+# Se oculta durante la instalación y se restaura al salir. `noct msg` tolera
+# comandos renombrados de Noctalia; si no está, se usa noctalia directamente.
+dock_msg() {
+  if command -v noct >/dev/null 2>&1; then
+    noct msg "$@"
+  else
+    noctalia msg "$@"
+  fi
+}
+if command -v noct >/dev/null 2>&1 || command -v noctalia >/dev/null 2>&1; then
+  dock_msg dock-hide >/dev/null 2>&1 || true
+  trap 'dock_msg dock-show >/dev/null 2>&1 || true' EXIT INT TERM
 fi
 
 sudo env \

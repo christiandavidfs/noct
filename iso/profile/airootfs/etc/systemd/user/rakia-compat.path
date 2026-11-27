@@ -1,0 +1,10 @@
+[Unit]
+Description=Rakia: vigila actualizaciones de Umbriel y Noctalia
+
+[Path]
+PathChanged=/usr/bin/umbriel
+PathChanged=/usr/bin/noctalia
+Unit=rakia-compat.service
+
+[Install]
+WantedBy=default.target

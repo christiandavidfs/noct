@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
-use noct_core::{config, doctor, effects, env, keys, profile, run, sync, theme, wallpaper};
+use noct_core::{compat, config, doctor, effects, env, keys, profile, run, sync, theme, wallpaper};
 
 #[derive(Parser)]
 #[command(
@@ -67,6 +67,29 @@ enum Commands {
         #[arg(long)]
         dry_run: bool,
         /// Comando y argumentos
+        #[arg(
+            trailing_var_arg = true,
+            allow_hyphen_values = true,
+            required = true,
+            num_args = 1..
+        )]
+        command: Vec<String>,
+    },
+    /// Valida y repara la configuración tras actualizar Umbriel o Noctalia
+    Compat {
+        /// Aplica las reparaciones (sin esto solo informa)
+        #[arg(long)]
+        apply: bool,
+        /// Salida JSON
+        #[arg(long)]
+        json: bool,
+        /// Sin salida en consola; solo estado y notificaciones
+        #[arg(long)]
+        quiet: bool,
+    },
+    /// Puente de IPC: llama a `noctalia msg` tolerando comandos renombrados
+    Msg {
+        /// Comando y argumentos para Noctalia
         #[arg(
             trailing_var_arg = true,
             allow_hyphen_values = true,
@@ -398,6 +421,11 @@ fn run() -> Result<ExitCode> {
             )?;
             Ok(ExitCode::from(code.clamp(0, 255) as u8))
         }
+        Commands::Compat { apply, json, quiet } => cmd_compat(apply, json, quiet),
+        Commands::Msg { command } => {
+            let code = compat::exec_noctalia_msg(&command)?;
+            Ok(ExitCode::from(code.clamp(0, 255) as u8))
+        }
     }
 }
 
@@ -489,6 +517,68 @@ fn cmd_doctor(json: bool, fix: bool) -> Result<ExitCode> {
     );
 
     Ok(ExitCode::from(report.exit_code() as u8))
+}
+
+fn cmd_compat(apply: bool, json: bool, quiet: bool) -> Result<ExitCode> {
+    let outcome = compat::run(apply)?;
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&outcome)?);
+        return Ok(ExitCode::from(if outcome.healthy() { 0 } else { 1 }));
+    }
+
+    if quiet {
+        return Ok(ExitCode::from(if outcome.healthy() { 0 } else { 1 }));
+    }
+
+    let tty = std::io::stdout().is_terminal();
+    println!("{}", color(tty, "1", "Rakia compat"));
+    println!(
+        "  umbriel:  {}",
+        outcome.umbriel_version.as_deref().unwrap_or("no instalado")
+    );
+    println!(
+        "  noctalia: {}",
+        outcome
+            .noctalia_version
+            .as_deref()
+            .unwrap_or("no instalado")
+    );
+    println!("  config:   {}", outcome.config);
+    println!(
+        "  estado:   {}",
+        match outcome.valid_after {
+            Some(true) => "válido",
+            Some(false) => "inválido",
+            None => "no se pudo validar (¿Umbriel instalado?)",
+        }
+    );
+    if let Some(binary) = &outcome.noct_binary {
+        println!("  noct:     {binary}");
+    }
+
+    for repair in &outcome.repairs {
+        println!("  {} {repair}", color(tty, "32", "✓"));
+    }
+    for pending in &outcome.pending {
+        println!("  {} {pending}", color(tty, "33", "!"));
+    }
+    for note in &outcome.notes {
+        println!("  {}", color(tty, "2", note));
+    }
+
+    if outcome.pending.is_empty() {
+        if !apply {
+            println!("\nSolo lectura. Usa `noct compat --apply` para reparar.");
+        }
+    } else if apply {
+        println!(
+            "\nQuedan cambios que Noct no puede reparar sin criterio humano. \
+             Copia guardada: ~/.local/state/noct/compat.json"
+        );
+    }
+
+    Ok(ExitCode::from(if outcome.healthy() { 0 } else { 1 }))
 }
 
 fn copy_wallpaper(src: &Path, dir: &Path, stem: &str) -> Result<String> {

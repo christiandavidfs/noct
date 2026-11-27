@@ -137,28 +137,28 @@ binds {
 
     // Aplicaciones
     Mod+Return hotkey-overlay-title="Terminal: foot" { spawn "foot"; }
-    Mod+D hotkey-overlay-title="Lanzador: Noctalia" { spawn-sh "noctalia msg panel-toggle launcher"; }
-    Mod+Space hotkey-overlay-title="Lanzador: Noctalia" { spawn-sh "noctalia msg panel-toggle launcher"; }
-    Mod+Shift+D hotkey-overlay-title="Dock: Noctalia" { spawn-sh "noctalia msg dock-toggle"; }
+    Mod+D hotkey-overlay-title="Lanzador: Noctalia" { spawn-sh "noct msg panel-toggle launcher"; }
+    Mod+Space hotkey-overlay-title="Lanzador: Noctalia" { spawn-sh "noct msg panel-toggle launcher"; }
+    Mod+Shift+D hotkey-overlay-title="Dock: Noctalia" { spawn-sh "noct msg dock-toggle"; }
 
     // Noctalia
-    Mod+Shift+Return hotkey-overlay-title="Fondos: Noctalia" { spawn-sh "noctalia msg panel-toggle wallpaper"; }
-    Mod+S hotkey-overlay-title="Centro de control: Noctalia" { spawn-sh "noctalia msg panel-toggle control-center"; }
-    Mod+Shift+S hotkey-overlay-title="Ajustes: Noctalia" { spawn-sh "noctalia msg settings-toggle"; }
-    Mod+Alt+L hotkey-overlay-title="Bloquear: Noctalia" { spawn-sh "noctalia msg session lock"; }
-    Mod+Shift+Q hotkey-overlay-title="Sesión: Noctalia" { spawn-sh "noctalia msg panel-toggle session"; }
+    Mod+Shift+Return hotkey-overlay-title="Fondos: Noctalia" { spawn-sh "noct msg panel-toggle wallpaper"; }
+    Mod+S hotkey-overlay-title="Centro de control: Noctalia" { spawn-sh "noct msg panel-toggle control-center"; }
+    Mod+Shift+S hotkey-overlay-title="Ajustes: Noctalia" { spawn-sh "noct msg settings-toggle"; }
+    Mod+Alt+L hotkey-overlay-title="Bloquear: Noctalia" { spawn-sh "noct msg session lock"; }
+    Mod+Shift+Q hotkey-overlay-title="Sesión: Noctalia" { spawn-sh "noct msg panel-toggle session"; }
 
     // Multimedia
-    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "noctalia msg volume-up"; }
-    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "noctalia msg volume-down"; }
-    XF86AudioMute allow-when-locked=true { spawn-sh "noctalia msg volume-mute"; }
-    XF86AudioMicMute allow-when-locked=true { spawn-sh "noctalia msg mic-mute"; }
-    XF86AudioNext allow-when-locked=true { spawn-sh "noctalia msg media next"; }
-    XF86AudioPrev allow-when-locked=true { spawn-sh "noctalia msg media previous"; }
-    XF86AudioPlay allow-when-locked=true { spawn-sh "noctalia msg media play"; }
-    XF86AudioPause allow-when-locked=true { spawn-sh "noctalia msg media stop"; }
-    XF86MonBrightnessUp allow-when-locked=true { spawn-sh "noctalia msg brightness-up"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "noctalia msg brightness-down"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "noct msg volume-up"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "noct msg volume-down"; }
+    XF86AudioMute allow-when-locked=true { spawn-sh "noct msg volume-mute"; }
+    XF86AudioMicMute allow-when-locked=true { spawn-sh "noct msg mic-mute"; }
+    XF86AudioNext allow-when-locked=true { spawn-sh "noct msg media next"; }
+    XF86AudioPrev allow-when-locked=true { spawn-sh "noct msg media previous"; }
+    XF86AudioPlay allow-when-locked=true { spawn-sh "noct msg media play"; }
+    XF86AudioPause allow-when-locked=true { spawn-sh "noct msg media stop"; }
+    XF86MonBrightnessUp allow-when-locked=true { spawn-sh "noct msg brightness-up"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "noct msg brightness-down"; }
 
     // Ventanas
     Mod+Q { close-window; }

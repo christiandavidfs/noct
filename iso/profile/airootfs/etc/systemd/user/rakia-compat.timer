@@ -1,0 +1,11 @@
+[Unit]
+Description=Rakia: comprobación periódica de compatibilidad
+
+[Timer]
+OnStartupSec=45s
+OnUnitActiveSec=20min
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

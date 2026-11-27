@@ -1,5 +1,6 @@
 //! Noct core: sistema, temas, atajos y diagnóstico.
 
+pub mod compat;
 pub mod config;
 pub mod doctor;
 pub mod effects;

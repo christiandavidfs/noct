@@ -644,6 +644,50 @@ pub fn run() -> Report {
         Some("Ejecuta `noct bridge apply --to umbriel`"),
     ));
 
+    // 12. Última pasada de compatibilidad tras actualizar Umbriel/Noctalia.
+    match crate::compat::last_report() {
+        Some(report) => {
+            let pending = report
+                .get("pending")
+                .and_then(|value| value.as_array())
+                .cloned()
+                .unwrap_or_default();
+            let valid_after = report.get("valid_after").and_then(|value| value.as_bool());
+            let config = report
+                .get("config")
+                .and_then(|value| value.as_str())
+                .unwrap_or("config.toml");
+            if pending.is_empty() && valid_after != Some(false) {
+                checks.push(check(
+                    "compat.status",
+                    "Compatibilidad al día",
+                    Severity::Ok,
+                    format!("La última pasada dejó {config} válido y sin pendientes."),
+                    None,
+                ));
+            } else {
+                let first = pending
+                    .first()
+                    .and_then(|value| value.as_str())
+                    .unwrap_or("revisa el informe");
+                checks.push(check(
+                    "compat.status",
+                    "Compatibilidad con cambios pendientes",
+                    Severity::Warn,
+                    format!("{config}: {first}"),
+                    Some("Revisa ~/.local/state/noct/compat.json y ejecuta `noct compat --apply`"),
+                ));
+            }
+        }
+        None => checks.push(check(
+            "compat.status",
+            "Compatibilidad sin ejecutar",
+            Severity::Info,
+            "Todavía no hay una pasada de `noct compat` para este usuario.",
+            Some("Ejecuta `noct compat --apply` (también corre al iniciar sesión)"),
+        )),
+    }
+
     let mut summary = Summary::default();
     for item in &checks {
         match item.severity {

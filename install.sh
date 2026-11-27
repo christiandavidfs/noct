@@ -652,6 +652,59 @@ EOF
   systemctl --user enable --now noct-fix-umbriel-theme.path >/dev/null 2>&1 || true
 }
 
+install_compat_layer() {
+  local dir="$HOME/.config/systemd/user"
+  [ "$DRY_RUN" -eq 1 ] && { log "$(say 'Would write the Rakia compatibility service' 'Escribiría el servicio de compatibilidad de Rakia')"; return 0; }
+  mkdir -p "$dir"
+  cat > "$dir/rakia-compat.service" <<EOF
+[Unit]
+Description=Rakia: compatibilidad con Umbriel y Noctalia
+
+[Service]
+Type=oneshot
+ExecStart=-$NOCT_BIN compat --apply --quiet
+Nice=10
+IOSchedulingClass=idle
+EOF
+  cat > "$dir/rakia-compat.timer" <<'EOF'
+[Unit]
+Description=Rakia: comprobación periódica de compatibilidad
+
+[Timer]
+OnStartupSec=45s
+OnUnitActiveSec=20min
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+  local umbriel_bin noctalia_bin
+  umbriel_bin="$(command -v umbriel 2>/dev/null || true)"
+  noctalia_bin="$(command -v noctalia 2>/dev/null || true)"
+  if [ -n "$umbriel_bin" ] || [ -n "$noctalia_bin" ]; then
+    {
+      printf '%s\n' \
+        '[Unit]' \
+        'Description=Rakia: vigila actualizaciones de Umbriel y Noctalia' \
+        '' \
+        '[Path]'
+      if [ -n "$umbriel_bin" ]; then printf 'PathChanged=%s\n' "$umbriel_bin"; fi
+      if [ -n "$noctalia_bin" ]; then printf 'PathChanged=%s\n' "$noctalia_bin"; fi
+      printf '%s\n' \
+        'Unit=rakia-compat.service' \
+        '' \
+        '[Install]' \
+        'WantedBy=default.target'
+    } > "$dir/rakia-compat.path"
+    systemctl --user enable --now rakia-compat.path >/dev/null 2>&1 || true
+  fi
+  systemctl --user daemon-reload >/dev/null 2>&1 || true
+  systemctl --user enable rakia-compat.timer >/dev/null 2>&1 || true
+  systemctl --user start rakia-compat.timer >/dev/null 2>&1 || true
+  "$NOCT_BIN" compat --apply --quiet >/dev/null 2>&1 || true
+}
+
 write_wallpaper_config() {
   local mode="$1" path="${2:-}"
   [ "$DRY_RUN" -eq 1 ] && { log "$(say 'Would write wallpaper.toml in %s mode' 'Escribiría wallpaper.toml en modo %s' "$mode")"; return 0; }
@@ -780,10 +833,10 @@ has_bind() {
 configure_screenshot_keys() {
   local chord action pair
   for pair in \
-    "Print|spawn noctalia msg screenshot-region" \
-    "Shift+Print|spawn noctalia msg screenshot-window" \
-    "Ctrl+Print|spawn noctalia msg screenshot-fullscreen" \
-    "Alt+Print|spawn noctalia msg screenshot-annotate"; do
+    "Print|spawn noct msg screenshot-region" \
+    "Shift+Print|spawn noct msg screenshot-window" \
+    "Ctrl+Print|spawn noct msg screenshot-fullscreen" \
+    "Alt+Print|spawn noct msg screenshot-annotate"; do
     chord="${pair%%|*}"
     action="${pair#*|}"
     if has_bind "$chord"; then
@@ -938,6 +991,7 @@ configure_noct() {
   install_theme_watcher
   migrate_umbriel_syntax
   configure_wallpaper
+  install_compat_layer
 }
 
 # ---------------------------------------------------------------------------

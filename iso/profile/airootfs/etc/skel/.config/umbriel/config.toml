@@ -50,25 +50,25 @@ default_extent_fraction = 0.5
 [keybinds]
 
 # Aplicaciones y sesión
-"Mod" = "spawn noctalia msg panel-toggle launcher"
+"Mod" = "spawn noct msg panel-toggle launcher"
 "Mod+Return" = { action = "spawn foot", repeat = false }
-"Mod+D" = "spawn noctalia msg panel-toggle launcher"
+"Mod+D" = "spawn noct msg panel-toggle launcher"
 "Mod+Q" = { action = "window-close", repeat = false }
 "Mod+Escape" = "session-quit"
 "Mod+Shift+Escape" = { action = "shortcuts-inhibit-toggle", allow_when_inhibited = true, repeat = false }
 
 # Noctalia
-"Mod+S" = "spawn noctalia msg panel-toggle control-center"
-"Mod+Shift+S" = "spawn noctalia msg settings-toggle"
-"Mod+Shift+Return" = "spawn noctalia msg panel-toggle wallpaper"
-"Mod+Alt+L" = "spawn noctalia msg session lock"
-"Mod+Shift+Q" = "spawn noctalia msg panel-toggle session"
-"Mod+Shift+D" = "spawn noctalia msg dock-toggle"
+"Mod+S" = "spawn noct msg panel-toggle control-center"
+"Mod+Shift+S" = "spawn noct msg settings-toggle"
+"Mod+Shift+Return" = "spawn noct msg panel-toggle wallpaper"
+"Mod+Alt+L" = "spawn noct msg session lock"
+"Mod+Shift+Q" = "spawn noct msg panel-toggle session"
+"Mod+Shift+D" = "spawn noct msg dock-toggle"
 
 # Capturas
-"Print" = "spawn noctalia msg screenshot-region"
-"Shift+Print" = "spawn noctalia msg screenshot-window"
-"Ctrl+Print" = "spawn noctalia msg screenshot-fullscreen"
+"Print" = "spawn noct msg screenshot-region"
+"Shift+Print" = "spawn noct msg screenshot-window"
+"Ctrl+Print" = "spawn noct msg screenshot-fullscreen"
 
 # Enfoque y movimiento
 "Mod+Left" = "window-focus-left"
@@ -134,11 +134,11 @@ default_extent_fraction = 0.5
 "Mod+Tab" = "scratchpad-focus-next"
 
 # Audio y brillo
-"XF86AudioRaiseVolume" = "spawn noctalia msg volume-up"
-"XF86AudioLowerVolume" = "spawn noctalia msg volume-down"
-"XF86AudioMute" = "spawn noctalia msg volume-mute"
-"XF86MonBrightnessUp" = "spawn noctalia msg brightness-up"
-"XF86MonBrightnessDown" = "spawn noctalia msg brightness-down"
+"XF86AudioRaiseVolume" = "spawn noct msg volume-up"
+"XF86AudioLowerVolume" = "spawn noct msg volume-down"
+"XF86AudioMute" = "spawn noct msg volume-mute"
+"XF86MonBrightnessUp" = "spawn noct msg brightness-up"
+"XF86MonBrightnessDown" = "spawn noct msg brightness-down"
 
 # Ventanas y capas de Noctalia
 [[window_rule]]

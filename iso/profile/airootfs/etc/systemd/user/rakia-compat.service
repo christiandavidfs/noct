@@ -1,0 +1,9 @@
+[Unit]
+Description=Rakia: comprobación de compatibilidad con Umbriel y Noctalia
+After=graphical-session-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/rakia-compat
+Nice=10
+IOSchedulingClass=idle

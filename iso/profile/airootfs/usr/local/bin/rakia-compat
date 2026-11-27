@@ -1,0 +1,8 @@
+#!/bin/sh
+# Capa de compatibilidad de Rakia: valida y repara la configuración de Umbriel
+# tras una actualización de Umbriel o Noctalia. Nunca toca valores válidos.
+# Detalle en ~/.local/state/noct/compat.json y compat.log.
+# Sale siempre con 0: un fallo aquí no debe marcar la sesión como degradada.
+command -v noct >/dev/null 2>&1 || exit 0
+noct compat --apply --quiet >/dev/null 2>&1 || true
+exit 0

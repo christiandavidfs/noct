@@ -356,6 +356,53 @@ Mod+Shift+Slash { show-hotkey-overlay; }
 The defaults used for new users live in `/etc/skel/.config/umbriel/config.toml` (Umbriel)
 and `/etc/skel/.config/niri/config.kdl` (Niri fallback). The per-user file always wins.
 
+### Compatibility with Umbriel and Noctalia updates
+
+Rakia is a layer, not a fork: it only uses public configuration and IPC. To keep an
+update from breaking the desktop, a small user service validates and repairs the
+configuration automatically.
+
+**When it runs**
+
+- at login (`rakia-compat.service`, oneshot);
+- as soon as the `umbriel` or `noctalia` binary changes (`rakia-compat.path`);
+- every 20 minutes and 45 seconds after boot (`rakia-compat.timer`);
+- whenever you run it by hand.
+
+**What it does**
+
+- validates `~/.config/umbriel/config.toml` with the installed binary
+  (`umbriel config validate --json`);
+- removes keys that Umbriel no longer accepts and renames shortcuts whose action no
+  longer exists, so a single renamed action never invalidates the whole config;
+- migrates `spawn noctalia msg …` shortcuts to `spawn noct msg …`, which tolerates
+  renamed Noctalia commands at runtime;
+- keeps the last valid configuration in
+  `~/.local/state/noct/umbriel-config.good.toml` and restores it only if the file stops
+  being valid TOML (the broken copy is kept next to it);
+- never rewrites values that are still valid.
+
+**Manual use**
+
+```bash
+noct compat              # report only
+noct compat --apply      # repair and update the last-good snapshot
+noct compat --json       # machine-readable report
+noct doctor              # includes the last compatibility pass
+```
+
+State lives in `~/.local/state/noct/`: `compat.json` (last report), `compat.log`
+(changes) and `umbriel-config.good.toml` (last valid config). If something cannot be
+repaired automatically, Noct keeps the desktop working, logs the exact Umbriel message
+and sends a desktop notification.
+
+**Shortcuts and IPC**
+
+Shortcuts that talk to Noctalia call `noct msg <command>` instead of `noctalia msg`.
+`noct msg` resolves the command against the installed Noctalia, applies a small alias
+table for renamed verbs and, if the command disappears, logs it and exits without
+breaking the session. You can always call `noctalia msg` directly.
+
 Wi-Fi:
 
 ```bash
