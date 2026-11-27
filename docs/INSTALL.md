@@ -373,8 +373,8 @@ configuration automatically.
 
 - validates `~/.config/umbriel/config.toml` with the installed binary
   (`umbriel config validate --json`);
-- removes keys that Umbriel no longer accepts and renames shortcuts whose action no
-  longer exists, so a single renamed action never invalidates the whole config;
+- removes keys that Umbriel no longer accepts and parks shortcuts whose action no longer
+  exists, so a single renamed action never invalidates the whole config;
 - migrates `spawn noctalia msg …` shortcuts to `spawn noct msg …`, which tolerates
   renamed Noctalia commands at runtime;
 - keeps the last valid configuration in

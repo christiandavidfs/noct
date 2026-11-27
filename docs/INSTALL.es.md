@@ -379,8 +379,7 @@ configuración automáticamente.
 - valida `~/.config/umbriel/config.toml` con el binario instalado
   (`umbriel config validate --json`);
 - retira claves que Umbriel ya no acepta y aparta los atajos cuya acción ya no existe,
-  de modo que una sola acción renombrada no invalide toda la configuración;
-- migra los atajos `spawn noctalia msg …` a `spawn noct msg …`, que tolera comandos
+  de modo que una sola acción renombrada no invalide toda la configuración;- migra los atajos `spawn noctalia msg …` a `spawn noct msg …`, que tolera comandos
   renombrados de Noctalia en tiempo de ejecución;
 - guarda la última configuración válida en
   `~/.local/state/noct/umbriel-config.good.toml` y solo la restaura si el archivo deja de
