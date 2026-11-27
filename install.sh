@@ -656,6 +656,11 @@ install_compat_layer() {
   local dir="$HOME/.config/systemd/user"
   [ "$DRY_RUN" -eq 1 ] && { log "$(say 'Would write the Rakia compatibility service' 'Escribiría el servicio de compatibilidad de Rakia')"; return 0; }
   mkdir -p "$dir"
+  mkdir -p "$dir/umbriel.service.d"
+  cat > "$dir/umbriel.service.d/rakia-software.conf" <<'EOF'
+[Service]
+Environment=WLR_RENDERER_ALLOW_SOFTWARE=1
+EOF
   cat > "$dir/rakia-compat.service" <<EOF
 [Unit]
 Description=Rakia: compatibilidad con Umbriel y Noctalia

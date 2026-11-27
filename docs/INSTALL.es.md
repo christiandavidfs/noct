@@ -194,6 +194,10 @@ Estado actual:
 - **herramientas de CachyOS incluidas**: `cachy-update` (avisador de actualizaciones +
   timer diario), `cachyos-packageinstaller` (tienda con AUR) y `cachyos-kernel-manager`;
 - escritorio por defecto: tema oscuro, fondo de Noga y la marca Kepler en el lanzador/dock.
+- Umbriel cae a renderizado software cuando no hay GL por hardware (VMware o QEMU
+  sin aceleración 3D), así que el live llega igualmente al escritorio.
+- Umbriel cae a renderizado software cuando no hay GL por hardware (VMware o QEMU
+  sin aceleración 3D), así que el live llega igualmente al escritorio.
 
 > El instalador está probado en máquinas virtuales BIOS y UEFI. Haz copia de tus datos
 > antes de instalar en hardware real. Secure Boot sigue sin probar.

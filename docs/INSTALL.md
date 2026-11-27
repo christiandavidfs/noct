@@ -193,6 +193,10 @@ Current status:
 - **CachyOS tools included**: `cachy-update` (update notifier + daily timer),
   `cachyos-packageinstaller` (app store with AUR) and `cachyos-kernel-manager`;
 - default desktop: dark theme, Noga wallpaper, Kepler mark in the launcher/dock.
+- Umbriel falls back to software rendering when the machine has no hardware GL
+  (VMware or QEMU without 3D acceleration), so the live still reaches the desktop.
+- Umbriel falls back to software rendering when the machine has no hardware GL
+  (VMware or QEMU without 3D acceleration), so the live still reaches the desktop.
 
 > The installer has been tested on BIOS and UEFI virtual machines. Back up your data before
 > installing on real hardware. Secure Boot is still untested.
