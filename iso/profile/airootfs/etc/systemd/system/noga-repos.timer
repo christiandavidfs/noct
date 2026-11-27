@@ -1,0 +1,11 @@
+[Unit]
+Description=Noga: prepara los repositorios tras el arranque
+
+[Timer]
+OnBootSec=25s
+OnUnitActiveSec=1h
+AccuracySec=1min
+Persistent=false
+
+[Install]
+WantedBy=timers.target

@@ -81,3 +81,21 @@ install_noct_widget() {
 install_noct_widget /etc/skel
 install_noct_widget /home/noga
 chown -hR 1000:1000 /home/noga
+
+# Contrato del escritorio: avisa si la configuración por defecto deja de ser
+# válida con la versión empaquetada de Umbriel o si Noctalia renombró un verbo.
+if command -v umbriel >/dev/null 2>&1; then
+  umbriel config validate -c /etc/skel/.config/umbriel/config.toml ||
+    printf 'Aviso: la configuración por defecto de Umbriel no valida con la versión empaquetada.\n' >&2
+fi
+if command -v noctalia >/dev/null 2>&1; then
+  noctalia msg --help 2>/dev/null | awk '/^  [a-z0-9-]+/{print $1}' | sort -u >/tmp/noctalia-verbs.txt || true
+  grep -ho 'spawn noct msg [a-z0-9-]*' /etc/skel/.config/umbriel/config.toml 2>/dev/null |
+    awk '{print $4}' | sort -u |
+    while read -r verb; do
+      [ -n "$verb" ] || continue
+      grep -qx -- "$verb" /tmp/noctalia-verbs.txt ||
+        printf 'Aviso: Noctalia no anuncia el verbo %s (noct msg lo gestiona en runtime).\n' "$verb" >&2
+    done
+  rm -f /tmp/noctalia-verbs.txt
+fi
