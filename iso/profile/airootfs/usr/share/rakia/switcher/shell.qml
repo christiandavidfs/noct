@@ -43,6 +43,7 @@ ShellRoot {
         property bool opening: false
         property bool captureWanted: false
         property bool reveal: false
+        property string clockText: Qt.formatTime(new Date(), "HH:mm")
         property string shotPath: ""
         property string pendingShot: ""
         property string focusOut: ""
@@ -51,6 +52,14 @@ ShellRoot {
         property int capW: 0
         property int capH: 0
         property var backdropClip: Qt.rect(0, 0, 0, 0)
+
+        Timer {
+            interval: 1000
+            running: true
+            repeat: true
+            triggeredOnStart: true
+            onTriggered: hud.clockText = Qt.formatTime(new Date(), "HH:mm")
+        }
 
         readonly property color accent: "#7CFFB2"
         readonly property color accentSoft: "#3E7F63"
@@ -547,7 +556,7 @@ ShellRoot {
 
                 Text {
                     anchors.right: parent.right
-                    text: Qt.formatTime(new Date(), "HH:mm")
+                    text: hud.clockText
                     color: "#E8F6EC"
                     font.pixelSize: 30
                     font.family: "monospace"
