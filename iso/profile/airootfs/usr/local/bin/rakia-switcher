@@ -1,0 +1,62 @@
+#!/bin/sh
+# rakia-switcher — HUD de ventanas de Rakia sobre Umbriel.
+#
+# Uso:
+#   rakia-switcher daemon        arranca el daemon de Quickshell
+#   rakia-switcher open|next|prev|commit|cancel
+#
+# Si Quickshell o la config no existen, cae al cambio de ventana de Umbriel.
+set -u
+
+CONFIG="${RAKIA_SWITCHER_CONFIG:-}"
+if [ -z "$CONFIG" ]; then
+    selfdir=$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")
+    for candidate in \
+        /usr/share/rakia/switcher/shell.qml \
+        "$HOME/.local/share/rakia/switcher/shell.qml" \
+        "$selfdir/../share/rakia/switcher/shell.qml"; do
+        if [ -f "$candidate" ]; then
+            CONFIG="$candidate"
+            break
+        fi
+    done
+fi
+
+action="${1:-open}"
+
+if [ "$action" = "daemon" ]; then
+    [ -n "$CONFIG" ] && [ -f "$CONFIG" ] || exit 0
+    command -v qs >/dev/null 2>&1 || exit 0
+    exec qs -p "$CONFIG"
+fi
+
+fallback() {
+    umbriel msg window-focus-last >/dev/null 2>&1 || true
+}
+
+if [ -z "$CONFIG" ] || [ ! -f "$CONFIG" ]; then
+    fallback
+    exit 0
+fi
+command -v qs >/dev/null 2>&1 || { fallback; exit 0; }
+
+pid=$(pgrep -f "qs -p $CONFIG" 2>/dev/null | head -n 1)
+if [ -z "$pid" ]; then
+    setsid qs -p "$CONFIG" >/dev/null 2>&1 &
+    n=0
+    while [ "$n" -lt 60 ]; do
+        pid=$(pgrep -f "qs -p $CONFIG" 2>/dev/null | head -n 1)
+        if [ -n "$pid" ] && qs ipc --pid "$pid" call hud ping >/dev/null 2>&1; then
+            break
+        fi
+        n=$((n + 1))
+        sleep 0.05
+    done
+fi
+
+if [ -z "$pid" ]; then
+    fallback
+    exit 0
+fi
+
+qs ipc --pid "$pid" call hud "$action" >/dev/null 2>&1 || fallback

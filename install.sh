@@ -731,14 +731,18 @@ import re, sys
 path = sys.argv[1]
 text = open(path).read()
 if re.search(r'(?m)^\s*autostart\s*=', text):
-    text = re.sub(r'(?m)^\s*#?\s*autostart\s*=\s*\[[^\]]*\]', 'autostart = ["noctalia"]', text, count=1)
+    text = re.sub(r'(?m)^\s*#?\s*autostart\s*=\s*\[[^\]]*\]', 'autostart = ["noctalia", "rakia-switcher daemon"]', text, count=1)
 else:
-    text = text.replace('[general]\n', '[general]\nautostart = ["noctalia"]\n', 1)
+    text = text.replace('[general]\n', '[general]\nautostart = ["noctalia", "rakia-switcher daemon"]\n', 1)
 open(path, 'w').write(text)
 PY
     else
-      warn "$(say 'python3 is missing; add autostart = ["noctalia"] to [general] in %s' 'python3 no está; añade autostart = ["noctalia"] a [general] en %s' "$cfg")"
+      warn "$(say 'python3 is missing; add autostart = ["noctalia", "rakia-switcher daemon"] to [general] in %s' 'python3 no está; añade autostart = ["noctalia", "rakia-switcher daemon"] a [general] en %s' "$cfg")"
     fi
+  fi
+  # El wrapper vive en $PREFIX/bin, que puede no estar en el PATH de la sesión.
+  if [ "$DRY_RUN" -eq 0 ]; then
+    sed -i "s|spawn rakia-switcher|spawn $PREFIX/bin/rakia-switcher|g; s|\"rakia-switcher daemon\"|\"$PREFIX/bin/rakia-switcher daemon\"|g" "$cfg"
   fi
   map_apps_in_config "$cfg"
 }
@@ -972,6 +976,7 @@ install_noct() {
   run mkdir -p "$PREFIX/bin"
   run install -Dm755 "$REPO_DIR/target/release/noct" "$NOCT_BIN"
   run install -Dm755 "$REPO_DIR/iso/profile/airootfs/usr/local/bin/rakia-lid" "$PREFIX/bin/rakia-lid"
+  run install -Dm755 "$REPO_DIR/iso/profile/airootfs/usr/local/bin/rakia-switcher" "$PREFIX/bin/rakia-switcher"
   case ":$PATH:" in
     *":$PREFIX/bin:"*) ;;
     *)

@@ -14,7 +14,7 @@ lid_close = "rakia-lid close"
 lid_open = "rakia-lid open"
 
 [general]
-autostart = ["noctalia"]
+autostart = ["noctalia", "rakia-switcher daemon"]
 show_cheatsheet = false
 xwayland_native_resolution = true
 focus_on_activate = true
@@ -149,7 +149,8 @@ default_extent_fraction = 0.5
 "Mod+K" = "window-focus-up"
 "Mod+L" = "window-focus-right"
 "Mod+F1" = "window-focus-next"
-"Alt+Tab" = { action = "window-focus-last", repeat = false }
+"Alt+Tab" = { action = "spawn rakia-switcher next", repeat = false }
+"Alt+Shift+Tab" = { action = "spawn rakia-switcher prev", repeat = false }
 "Mod+Shift+Left" = "column-move-left"
 "Mod+Shift+Down" = "window-move-down"
 "Mod+Shift+Up" = "window-move-up"
