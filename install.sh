@@ -96,7 +96,7 @@ Opciones:
   --from-source             Fuerza compilación de Noctalia y Umbriel
   --wallpaper fixed|bing-daily
   --wallpaper-path RUTA     Wallpaper fijo a aplicar
-  --with-greeter            Instala noctalia-greeter (no configura greetd)
+  --with-greeter            Instala y configura Noctalia Greeter en greetd
   --no-migrate              No migra la sintaxis antigua de Umbriel
   -h, --help
 
@@ -132,7 +132,7 @@ Options:
   --from-source             Force Noctalia and Umbriel source builds
   --wallpaper fixed|bing-daily
   --wallpaper-path PATH     Fixed wallpaper to apply
-  --with-greeter            Install noctalia-greeter (does not configure greetd)
+  --with-greeter            Install and configure Noctalia Greeter in greetd
   --no-migrate              Do not migrate old Umbriel keybind syntax
   -h, --help
 
@@ -366,23 +366,80 @@ install_greeter() {
     fedora) pkg_install noctalia-greeter || warn "$(say 'not in the Fedora repositories' 'no está en los repos de Fedora')" ;;
     *) warn "$(say 'install the Noctalia greeter manually' 'instala el greeter de Noctalia manualmente')" ;;
   esac
-  if [ "$LANG_MODE" = es ]; then
-    cat <<'EOF'
-  Para usarlo, configura greetd (/etc/greetd/config.toml):
-    [default_session]
-    command = "noctalia-greeter-session"
-    user = "greeter"
-  Luego: sudo systemctl enable --now greetd
-EOF
-  else
-    cat <<'EOF'
-  To use it, configure greetd (/etc/greetd/config.toml):
-    [default_session]
-    command = "noctalia-greeter-session"
-    user = "greeter"
-  Then: sudo systemctl enable --now greetd
-EOF
+  configure_greeter
+}
+
+configure_greeter() {
+  if [ "$NO_SYSTEM" -eq 1 ] || [ "$USER_ONLY" -eq 1 ]; then
+    log "$(say 'Skipping greetd configuration (--user/--no-system)' 'Se omite la configuración de greetd (--user/--no-system)')"
+    return 0
   fi
+  if ! need_cmd noctalia-greeter-session; then
+    warn "$(say 'noctalia-greeter-session not found; greeter left as is' 'noctalia-greeter-session no está; el greeter queda como estaba')"
+    return 0
+  fi
+  if [ ! -d /etc/greetd ]; then
+    warn "$(say 'greetd is not installed; greeter left as is' 'greetd no está instalado; el greeter queda como estaba')"
+    return 0
+  fi
+  if [ "$DRY_RUN" -eq 1 ]; then
+    log "$(say 'Would configure greetd with Noctalia Greeter' 'Configuraría greetd con Noctalia Greeter')"
+    return 0
+  fi
+
+  getent group greeter >/dev/null 2>&1 || as_root groupadd -r greeter 2>/dev/null || true
+  getent passwd greeter >/dev/null 2>&1 ||
+    as_root useradd -r -g greeter -s /usr/bin/nologin -d /var/lib/noctalia-greeter greeter 2>/dev/null || true
+  as_root install -d -m 0750 /var/lib/noctalia-greeter
+  as_root chown -R greeter:greeter /var/lib/noctalia-greeter 2>/dev/null || true
+
+  local wallpaper="$REPO_DIR/iso/profile/airootfs/usr/share/rakia/wallpapers/rakia-default.jpg"
+  if [ -f "$wallpaper" ]; then
+    as_root install -m 0644 "$wallpaper" /var/lib/noctalia-greeter/wallpaper.jpg
+    as_root chown greeter:greeter /var/lib/noctalia-greeter/wallpaper.jpg 2>/dev/null || true
+  fi
+
+  local gcfg=/var/lib/noctalia-greeter/greeter.toml
+  if [ ! -f "$gcfg" ]; then
+    local layout=""
+    layout="$(sed -n 's/^KEYMAP=//p' /etc/vconsole.conf 2>/dev/null | head -n1)"
+    case "$layout" in
+      "" | *[!a-z]*) layout="" ;;
+    esac
+    as_root tee "$gcfg" >/dev/null <<'EOF'
+[appearance]
+scheme = "Noctalia"
+hide_logo = true
+theme_mode = "dark"
+
+[appearance.wallpaper]
+path = "/var/lib/noctalia-greeter/wallpaper.jpg"
+fill_mode = "crop"
+EOF
+    if [ -n "$layout" ]; then
+      printf '\n[keyboard]\nlayout = "%s"\n' "$layout" | as_root tee -a "$gcfg" >/dev/null
+    fi
+    as_root chown greeter:greeter "$gcfg" 2>/dev/null || true
+    as_root chmod 0644 "$gcfg" 2>/dev/null || true
+  fi
+
+  if [ -x /usr/share/noctalia-greeter/setup_greetd_pam.sh ]; then
+    as_root bash /usr/share/noctalia-greeter/setup_greetd_pam.sh >/dev/null 2>&1 || true
+  fi
+
+  as_root cp -a /etc/greetd/config.toml "/etc/greetd/config.toml.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+  as_root tee /etc/greetd/config.toml >/dev/null <<'EOF'
+[terminal]
+vt = 1
+
+[default_session]
+command = "noctalia-greeter-session"
+user = "greeter"
+EOF
+
+  as_root systemctl enable greetd >/dev/null 2>&1 || true
+  as_root systemctl restart greetd >/dev/null 2>&1 || true
+  log "$(say 'Noctalia Greeter configured in greetd' 'Noctalia Greeter configurado en greetd')"
 }
 
 setup_suse_repo() {
