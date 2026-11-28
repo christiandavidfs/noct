@@ -189,6 +189,8 @@ Estado actual:
 - **instalador Calamares** (offline): instala el sistema live en disco, escribe GRUB para
   BIOS y UEFI, fija locale/teclado/zona horaria en Madrid y configura el autologin del
   usuario creado durante la instalación;
+- **conmutador de ventanas Alt+Tab** (Quickshell): todas las ventanas de todos los
+  monitores y workspaces, ordenadas por uso reciente, con previews y salto directo;
 - los USB y discos externos se montan automáticamente en el live y en el sistema
   instalado;
 - **herramientas de CachyOS incluidas**: `cachy-update` (avisador de actualizaciones +
@@ -566,8 +568,11 @@ del kernel.
 
 ### Limitaciones conocidas de la pre-release actual
 
-- Todavía no hay instalador gráfico (Calamares es el siguiente hito).
+- El instalador actualmente solo ofrece **borrar el disco**; instalar junto a otro sistema
+  (alongside/resize) y LUKS siguen pendientes.
 - La ISO no está firmada; Secure Boot debe estar desactivado.
+- El instalador se ha probado en máquinas virtuales BIOS/UEFI; haz copia de seguridad antes
+  de instalarlo en hardware real.
 
 ---
 

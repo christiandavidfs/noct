@@ -216,7 +216,11 @@ The `android/` directory contains a Jetpack Compose launcher:
 
 - widget-only home with reorderable blocks;
 - recents carousel with approximate active apps;
-- text-only app drawer;
+- text-only app drawer with a built-in settings entry;
+- floating gesture handle: swipe left/right for the previous/next app (up/down also
+  work), single tap goes home and double tap opens apps; both taps are configurable in
+  Settings → Clicks (Home / Apps / Settings);
+- English/Spanish UI following the system language;
 - settings and theme/wallpaper sync.
 
 Run `noct sync serve` on the desktop and enter the URL + token in the launcher’s **Sync** screen.
@@ -233,6 +237,7 @@ Current status:
 - slim and NVIDIA editions are generated from the same profile;
 - the NVIDIA edition boots on physical NVIDIA hardware (dual monitors, NVML/nvidia-utils);
 - the graphical installer (Calamares) installs the system offline and writes GRUB for BIOS and UEFI;
+- the Alt+Tab window switcher (Quickshell) lists every window of every monitor and workspace;
 - a compatibility layer validates and repairs the desktop configuration after Umbriel/Noctalia updates;
 - CachyOS tools included: `cachy-update`, `cachyos-packageinstaller` and `cachyos-kernel-manager`;
 - Brave, Thunar and mousepad included, and pacman already knows the CachyOS repositories;

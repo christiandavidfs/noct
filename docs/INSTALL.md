@@ -188,6 +188,8 @@ Current status:
 - **Calamares installer** (offline): installs the live system to disk, writes GRUB for
   BIOS and UEFI, sets locale/keyboard/timezone to Madrid and configures autologin for the
   user created during installation;
+- **Alt+Tab window switcher** (Quickshell): every window of every monitor and workspace,
+  ordered by recent use, with previews and a direct jump;
 - USB sticks and external drives are mounted automatically in the live session and in the
   installed system;
 - **CachyOS tools included**: `cachy-update` (update notifier + daily timer),
@@ -558,8 +560,11 @@ line.
 
 ### Known limitations of the current pre-release
 
-- No graphical installer yet (Calamares is the next milestone).
+- The installer currently only offers **erase disk**; alongside/resize and LUKS are still
+  pending.
 - The ISO is unsigned; Secure Boot must be disabled.
+- The installer has been tested on BIOS/UEFI virtual machines; back up before installing on
+  real hardware.
 
 ---
 
