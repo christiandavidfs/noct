@@ -149,6 +149,7 @@ default_extent_fraction = 0.5
 "Mod+K" = "window-focus-up"
 "Mod+L" = "window-focus-right"
 "Mod+F1" = "window-focus-next"
+"Alt+Tab" = { action = "window-focus-last", repeat = false }
 "Mod+Shift+Left" = "column-move-left"
 "Mod+Shift+Down" = "window-move-down"
 "Mod+Shift+Up" = "window-move-up"
