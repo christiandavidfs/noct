@@ -1,0 +1,37 @@
+#!/bin/sh
+# Rakia: apaga o enciende el panel interno del portátil al cerrar o abrir la tapa.
+#
+# No depende del nombre del conector: busca la primera salida interna
+# (eDP-*, LVDS-*, DSI-*) en `umbriel outputs`. Guarda el nombre al cerrar para
+# poder reactivarla al abrir, porque una salida desactivada deja de listarse.
+set -eu
+
+action="${1:-}"
+case "$action" in
+  close | open) ;;
+  *)
+    printf 'uso: rakia-lid close|open\n' >&2
+    exit 2
+    ;;
+esac
+
+state="${XDG_RUNTIME_DIR:-/tmp}/rakia-lid.output"
+
+internal_output() {
+  umbriel outputs 2>/dev/null |
+    awk '/^(eDP|LVDS|DSI)-[A-Za-z0-9]+/ { print $1; exit }'
+}
+
+if [ "$action" = "close" ]; then
+  out="$(internal_output)"
+  [ -n "$out" ] || exit 0
+  printf '%s\n' "$out" >"$state"
+  umbriel msg output-disable "$out" >/dev/null 2>&1 || true
+  exit 0
+fi
+
+out="$(cat "$state" 2>/dev/null || true)"
+[ -n "$out" ] || out="$(internal_output)"
+[ -n "$out" ] || exit 0
+umbriel msg output-enable "$out" >/dev/null 2>&1 || true
+rm -f "$state"

@@ -941,6 +941,7 @@ install_noct() {
   run_in "$REPO_DIR" cargo build --release -p noct-cli
   run mkdir -p "$PREFIX/bin"
   run install -Dm755 "$REPO_DIR/target/release/noct" "$NOCT_BIN"
+  run install -Dm755 "$REPO_DIR/iso/profile/airootfs/usr/local/bin/rakia-lid" "$PREFIX/bin/rakia-lid"
   case ":$PATH:" in
     *":$PREFIX/bin:"*) ;;
     *)
