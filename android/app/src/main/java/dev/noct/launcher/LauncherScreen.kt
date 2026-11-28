@@ -83,6 +83,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenSync: () -> Unit,
     onRequestUsageAccess: () -> Unit,
+    onResizeWidget: (Int, Int) -> Unit,
 ) {
     val battery = rememberBattery()
     val context = LocalContext.current
@@ -203,6 +204,8 @@ fun HomeScreen(
                                 HostedWidgetView(
                                     host = widgetHost,
                                     widget = widget,
+                                    editMode = editMode,
+                                    onResize = { height -> onResizeWidget(widget.id, height) },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 2.dp),

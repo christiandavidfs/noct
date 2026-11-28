@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Noct</string>
+    <string name="gesture_service_label">Noct Gestos</string>
+    <string name="gesture_service_description">Handle flotante para cambiar de app: desliza arriba o abajo para ir a la siguiente o anterior; toca para ir al home.</string>
 </resources>

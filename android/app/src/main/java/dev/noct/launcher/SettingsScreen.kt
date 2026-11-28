@@ -1,5 +1,7 @@
 package dev.noct.launcher
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,6 +26,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -142,6 +145,45 @@ fun SettingsScreen(
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            item {
+                SwitchSetting(
+                    title = "Handle de gestos",
+                    description = "Desliza arriba/abajo para cambiar de app; toca para ir al home",
+                    checked = prefs.gestureHandle,
+                    onChange = { onChange(prefs.copy(gestureHandle = it)) },
+                )
+            }
+            item {
+                val context = LocalContext.current
+                val enabled = isGestureServiceEnabled(context)
+                Text(
+                    text = if (enabled) {
+                        "Servicio de accesibilidad activo: el handle flotante está disponible."
+                    } else {
+                        "Servicio de accesibilidad desactivado. Actívalo en Ajustes → Accesibilidad para que el handle funcione."
+                    },
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(
+                    onClick = {
+                        runCatching {
+                            context.startActivity(
+                                Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                ) {
+                    Text(
+                        if (enabled) "Revisar servicio de accesibilidad"
+                        else "Activar servicio de accesibilidad"
+                    )
+                }
             }
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }

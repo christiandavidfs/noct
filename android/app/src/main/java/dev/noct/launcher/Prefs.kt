@@ -15,6 +15,7 @@ data class LauncherPrefs(
     val token: String = "",
     val themeJson: String? = null,
     val dismissed: Map<String, Long> = emptyMap(),
+    val gestureHandle: Boolean = true,
 )
 
 class Prefs(context: Context) {
@@ -34,6 +35,7 @@ class Prefs(context: Context) {
         serverUrl = sp.getString("serverUrl", "") ?: "",
         token = sp.getString("token", "") ?: "",
         themeJson = sp.getString("themeJson", null),
+        gestureHandle = sp.getBoolean("gestureHandle", true),
         dismissed = sp.getStringSet("dismissed", emptySet())
             ?.mapNotNull { entry ->
                 val separator = entry.lastIndexOf(':')
@@ -53,6 +55,7 @@ class Prefs(context: Context) {
             .putBoolean("showRecents", prefs.showRecents)
             .putBoolean("showSync", prefs.showSync)
             .putBoolean("clock24h", prefs.clock24h)
+            .putBoolean("gestureHandle", prefs.gestureHandle)
             .putString("serverUrl", prefs.serverUrl)
             .putString("token", prefs.token)
             .putString("themeJson", prefs.themeJson)

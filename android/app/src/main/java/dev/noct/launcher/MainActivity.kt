@@ -271,6 +271,9 @@ private fun NoctLauncherApp() {
                         onOpenSettings = { screen = "settings" },
                         onOpenSync = { screen = "sync" },
                         onRequestUsageAccess = { UsageAccess.openSettings(context) },
+                        onResizeWidget = { id, height ->
+                            saveWidgets(hostedWidgets.map { if (it.id == id) it.copy(heightDp = height) else it })
+                        },
                     )
                     if (loading) {
                         CircularProgressIndicator(
