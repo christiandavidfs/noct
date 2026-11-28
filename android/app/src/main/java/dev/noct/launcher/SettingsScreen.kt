@@ -32,12 +32,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
@@ -280,6 +286,66 @@ fun SettingsScreen(
                         if (enabled) "Revisar servicio de accesibilidad"
                         else "Activar servicio de accesibilidad"
                     )
+                }
+            }
+
+            item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
+
+            item { SectionTitle("Shizuku (cambio real)") }
+            item {
+                val context = LocalContext.current
+                var state by remember { mutableIntStateOf(-1) }
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        state = when {
+                            !ShizukuBridge.isRunning() -> 0
+                            !ShizukuBridge.hasPermission() -> 1
+                            else -> 2
+                        }
+                        delay(1500)
+                    }
+                }
+                val running = state != 0
+                val granted = state == 2
+                Text(
+                    text = when (state) {
+                        0 ->
+                            "Shizuku no está en ejecución. Ábrelo y arráncalo (depuración inalámbrica o ADB)."
+                        1 ->
+                            "Shizuku está activo, pero Noct no tiene permiso para usarlo."
+                        2 ->
+                            "Shizuku listo: los gestos cambian de tarea sin relanzar la app."
+                        else ->
+                            "Comprobando Shizuku…"
+                    },
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (!running) {
+                    OutlinedButton(
+                        onClick = {
+                            val intent = context.packageManager
+                                .getLaunchIntentForPackage("moe.shizuku.privileged.api")
+                            if (intent != null) {
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                runCatching { context.startActivity(intent) }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                    ) {
+                        Text("Abrir Shizuku")
+                    }
+                } else if (!granted) {
+                    OutlinedButton(
+                        onClick = { ShizukuBridge.requestPermission() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                    ) {
+                        Text("Conceder permiso a Noct")
+                    }
                 }
             }
 

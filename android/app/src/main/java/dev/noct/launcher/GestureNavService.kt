@@ -10,11 +10,13 @@ import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,6 +24,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
+import rikka.shizuku.Shizuku
 
 /**
  * Handle flotante para cambiar de app con un gesto, sin root.
@@ -31,8 +34,9 @@ import kotlin.math.abs
  * - Toque: home.
  *
  * La lista de apps vivas es una aproximación con UsageStats (Android no expone
- * las tareas de otras apps). Al cambiar se lanza la app con su intent de
- * launcher: Android decide si la reanuda o la reinicia.
+ * las tareas de otras apps). Si Shizuku está activo se usan las tareas reales
+ * del sistema y `startActivityFromRecents`, que reanuda la tarea sin relanzarla.
+ * Sin Shizuku se lanza la app con su intent de launcher.
  */
 class GestureNavService : AccessibilityService() {
 
@@ -40,11 +44,21 @@ class GestureNavService : AccessibilityService() {
     private var handle: View? = null
     private var currentPackage: String? = null
     private var apps: List<AppEntry> = emptyList()
+    // Ciclo estable de tareas para que subir/bajar recorra el historial sin
+    // que el reordenamiento de Recents lo descoloque en cada cambio.
+    private var cycle: List<ShizukuBridge.TaskRef> = emptyList()
+    private var cursor = -1
+    private var pendingTarget: String? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private var downY = 0f
     private var downAt = 0L
     private var dragging = false
+
+    private val binderReceivedListener =
+        Shizuku.OnBinderReceivedListener { ShizukuBridge.bind(this) }
+    private val binderDeadListener =
+        Shizuku.OnBinderDeadListener { ShizukuBridge.invalidate() }
 
     private val prefsListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
@@ -57,6 +71,11 @@ class GestureNavService : AccessibilityService() {
         getSharedPreferences("noct_launcher", Context.MODE_PRIVATE)
             .registerOnSharedPreferenceChangeListener(prefsListener)
         updateHandle()
+        runCatching {
+            Shizuku.addBinderReceivedListenerSticky(binderReceivedListener)
+            Shizuku.addBinderDeadListener(binderDeadListener)
+        }
+        ShizukuBridge.bind(this)
         scope.launch {
             apps = loadApps()
         }
@@ -65,8 +84,24 @@ class GestureNavService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val pkg = event.packageName?.toString() ?: return
-        if (pkg != packageName && pkg != "com.android.systemui") {
-            currentPackage = pkg
+        when {
+            // En el launcher no hay app "actual": el gesto debe ir a la más reciente.
+            pkg == packageName -> {
+                currentPackage = null
+                cursor = -1
+            }
+            pkg == "com.android.systemui" -> Unit
+            // Nuestro propio cambio: conservar el ciclo.
+            pkg == pendingTarget -> {
+                currentPackage = pkg
+                pendingTarget = null
+            }
+            // Navegación externa (el usuario abrió otra app): ciclo nuevo.
+            else -> {
+                currentPackage = pkg
+                cycle = emptyList()
+                cursor = -1
+            }
         }
     }
 
@@ -75,6 +110,10 @@ class GestureNavService : AccessibilityService() {
     override fun onDestroy() {
         getSharedPreferences("noct_launcher", Context.MODE_PRIVATE)
             .unregisterOnSharedPreferenceChangeListener(prefsListener)
+        runCatching {
+            Shizuku.removeBinderReceivedListener(binderReceivedListener)
+            Shizuku.removeBinderDeadListener(binderDeadListener)
+        }
         removeHandle()
         scope.cancel()
         super.onDestroy()
@@ -188,6 +227,43 @@ class GestureNavService : AccessibilityService() {
 
     private fun switchApp(direction: Int) {
         scope.launch {
+            // Shizuku: tareas reales del sistema y cambio sin relanzar.
+            val shellTasks = withContext(Dispatchers.IO) { ShizukuBridge.tasks() }
+            if (shellTasks.isNotEmpty()) {
+                val ids = shellTasks.mapTo(HashSet()) { it.id }
+                if (cycle.isEmpty() || cycle.none { it.id in ids }) {
+                    cycle = shellTasks
+                    cursor = cycle.indexOfFirst { it.packageName == currentPackage }
+                }
+                if (currentPackage == null) cursor = -1
+
+                val size = cycle.size
+                val next = if (cursor < 0) {
+                    if (direction > 0) 0 else size - 1
+                } else {
+                    ((cursor + direction) % size + size) % size
+                }
+                val target = cycle[next]
+                if (target.packageName != currentPackage) {
+                    val switched = withContext(Dispatchers.IO) {
+                        ShizukuBridge.shell?.switchTo(target.id) == true
+                    }
+                    if (switched) {
+                        cursor = next
+                        currentPackage = target.packageName
+                        pendingTarget = target.packageName
+                        return@launch
+                    }
+                    Toast.makeText(
+                        this@GestureNavService,
+                        "Shizuku: ${ShizukuBridge.lastError()}",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                    cycle = emptyList()
+                    cursor = -1
+                }
+            }
+
             if (apps.isEmpty()) apps = loadApps()
             val alive = withContext(Dispatchers.IO) {
                 RecentApps.load(this@GestureNavService, apps, limit = 8)

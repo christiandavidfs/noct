@@ -2,6 +2,7 @@ package dev.noct.launcher
 
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -27,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import rikka.shizuku.Shizuku
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -75,6 +77,19 @@ private fun normalizeHomeOrder(order: List<String>, widgets: List<HostedWidget>)
 @Composable
 private fun NoctLauncherApp() {
     val context = LocalContext.current
+
+    DisposableEffect(Unit) {
+        val listener = Shizuku.OnRequestPermissionResultListener { _, grantResult ->
+            if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                ShizukuBridge.bind(context)
+            }
+        }
+        runCatching { Shizuku.addRequestPermissionResultListener(listener) }
+        onDispose { runCatching { Shizuku.removeRequestPermissionResultListener(listener) } }
+    }
+    LaunchedEffect(Unit) {
+        ShizukuBridge.bind(context)
+    }
     val scope = rememberCoroutineScope()
     val store = remember { Prefs(context) }
     var prefs by remember { mutableStateOf(store.load()) }
