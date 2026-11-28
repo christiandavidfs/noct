@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,7 +74,7 @@ fun WidgetPickerScreen(
             provider != null && pendingId != -1
         ) {
             onAdded(HostedWidget(pendingId, provider.provider.flattenToString()))
-            status = "Widget añadido"
+            status = context.getString(R.string.picker_added)
         } else if (pendingId != -1) {
             host.deleteAppWidgetId(pendingId)
         }
@@ -91,7 +92,7 @@ fun WidgetPickerScreen(
             configureLauncher.launch(intent)
         } else {
             onAdded(HostedWidget(id, provider.provider.flattenToString()))
-            status = "Widget añadido"
+            status = context.getString(R.string.picker_added)
         }
     }
 
@@ -110,7 +111,7 @@ fun WidgetPickerScreen(
             if (pendingId != -1) host.deleteAppWidgetId(pendingId)
             pendingProvider = null
             pendingId = -1
-            status = "Permiso de widget cancelado"
+            status = context.getString(R.string.picker_cancelled)
         }
     }
 
@@ -134,10 +135,10 @@ fun WidgetPickerScreen(
         containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
         topBar = {
             TopAppBar(
-                title = { Text("Añadir widget") },
+                title = { Text(stringResource(R.string.picker_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -223,7 +224,7 @@ fun WidgetPickerScreen(
                     )
                 } else {
                     Text(
-                        text = "Este widget no ofrece vista previa. Se añadirá al home y podrás redimensionarlo en modo edición.",
+                        text = stringResource(R.string.picker_no_preview),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -233,10 +234,10 @@ fun WidgetPickerScreen(
                 TextButton(onClick = {
                     selected = null
                     beginAdd(current.info)
-                }) { Text("Añadir") }
+                }) { Text(stringResource(R.string.picker_add)) }
             },
             dismissButton = {
-                TextButton(onClick = { selected = null }) { Text("Cancelar") }
+                TextButton(onClick = { selected = null }) { Text(stringResource(R.string.picker_cancel)) }
             },
         )
     }

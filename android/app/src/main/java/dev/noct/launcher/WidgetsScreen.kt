@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -41,10 +42,10 @@ fun WidgetsScreen(
         containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
         topBar = {
             TopAppBar(
-                title = { Text("Widgets") },
+                title = { Text(stringResource(R.string.widgets_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -62,17 +63,17 @@ fun WidgetsScreen(
                 .padding(horizontal = 20.dp),
         ) {
             Button(onClick = onAdd, modifier = Modifier.fillMaxWidth()) {
-                Text("Añadir widget")
+                Text(stringResource(R.string.widgets_add))
             }
             Text(
-                text = "Los widgets se colocan en el home, debajo del reloj.",
+                text = stringResource(R.string.widgets_home_desc),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 10.dp),
             )
             if (hosted.isEmpty()) {
                 Text(
-                    text = "Todavía no hay widgets.",
+                    text = stringResource(R.string.widgets_empty),
                     fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -96,7 +97,7 @@ fun WidgetsScreen(
                                     .padding(vertical = 12.dp),
                             )
                             TextButton(onClick = { onRemove(widget) }) {
-                                Text("Quitar")
+                                Text(stringResource(R.string.widgets_remove))
                             }
                         }
                         HorizontalDivider(

@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -65,10 +66,10 @@ fun SyncScreen(
         containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
         topBar = {
             TopAppBar(
-                title = { Text("Sincronizar tema") },
+                title = { Text(stringResource(R.string.sync_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -88,7 +89,7 @@ fun SyncScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                text = "En el escritorio ejecuta:",
+                text = stringResource(R.string.sync_desktop_hint),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -104,7 +105,7 @@ fun SyncScreen(
                     .padding(12.dp),
             )
             Text(
-                text = "Copia la URL y el token que imprime el servidor.",
+                text = stringResource(R.string.sync_copy_hint),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -112,7 +113,7 @@ fun SyncScreen(
             OutlinedTextField(
                 value = url,
                 onValueChange = { url = it },
-                label = { Text("URL del escritorio") },
+                label = { Text(stringResource(R.string.sync_url_label)) },
                 placeholder = { Text("http://192.168.1.10:8787") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -120,7 +121,7 @@ fun SyncScreen(
             OutlinedTextField(
                 value = token,
                 onValueChange = { token = it },
-                label = { Text("Token") },
+                label = { Text(stringResource(R.string.sync_token_label)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -128,6 +129,11 @@ fun SyncScreen(
             Button(
                 onClick = {
                     if (busy) return@Button
+                    if (url.isBlank()) {
+                        status = context.getString(R.string.error_empty_url)
+                        isError = true
+                        return@Button
+                    }
                     busy = true
                     status = ""
                     isError = false
@@ -146,12 +152,12 @@ fun SyncScreen(
                             )
                             onSynced(updated)
                             status = buildString {
-                                append("Tema «${payload.name}» sincronizado")
-                                append(if (wallpaperOk) " y wallpaper aplicado." else ".")
+                                append(context.getString(R.string.sync_theme_synced, payload.name))
+                                append(if (wallpaperOk) context.getString(R.string.sync_wallpaper_applied) else ".")
                             }
                             isError = false
                         }.onFailure { error ->
-                            status = "Error: ${error.message ?: error.javaClass.simpleName}"
+                            status = context.getString(R.string.sync_error, error.message ?: error.javaClass.simpleName)
                             isError = true
                         }
                         busy = false
@@ -168,7 +174,7 @@ fun SyncScreen(
                     )
                     Spacer(Modifier.size(10.dp))
                 }
-                Text(if (busy) "Sincronizando…" else "Sincronizar ahora")
+                Text(stringResource(if (busy) R.string.sync_busy else R.string.sync_now))
             }
 
             if (status.isNotEmpty()) {
@@ -181,7 +187,7 @@ fun SyncScreen(
 
             if (palette != null) {
                 Text(
-                    text = "Tema actual",
+                    text = stringResource(R.string.sync_current_theme),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -200,7 +206,7 @@ fun SyncScreen(
                     }
                 }
                 Text(
-                    text = if (palette.dark) "Modo oscuro" else "Modo claro",
+                    text = stringResource(if (palette.dark) R.string.sync_dark else R.string.sync_light),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

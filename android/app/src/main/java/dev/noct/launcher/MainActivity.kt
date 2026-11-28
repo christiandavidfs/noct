@@ -2,6 +2,7 @@ package dev.noct.launcher
 
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -15,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,12 +43,26 @@ object AppCache {
 }
 
 class MainActivity : ComponentActivity() {
+
+    private val requestedScreen = mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        requestedScreen.value = intent?.getStringExtra(EXTRA_SCREEN)
         setContent {
-            NoctLauncherApp()
+            NoctLauncherApp(requestedScreen)
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        requestedScreen.value = intent.getStringExtra(EXTRA_SCREEN)
+    }
+
+    companion object {
+        const val EXTRA_SCREEN = "dev.noct.launcher.EXTRA_SCREEN"
     }
 }
 
@@ -75,7 +91,7 @@ private fun normalizeHomeOrder(order: List<String>, widgets: List<HostedWidget>)
 }
 
 @Composable
-private fun NoctLauncherApp() {
+private fun NoctLauncherApp(requestedScreen: MutableState<String?>) {
     val context = LocalContext.current
 
     DisposableEffect(Unit) {
@@ -99,6 +115,14 @@ private fun NoctLauncherApp() {
     var loading by remember { mutableStateOf(true) }
     var screen by rememberSaveable { mutableStateOf("home") }
     var editHome by rememberSaveable { mutableStateOf(false) }
+
+    val requested = requestedScreen.value
+    LaunchedEffect(requested) {
+        if (!requested.isNullOrBlank()) {
+            screen = requested
+            requestedScreen.value = null
+        }
+    }
 
     fun moveSection(section: String, delta: Int) {
         val order = prefs.homeOrder.toMutableList()
@@ -208,6 +232,7 @@ private fun NoctLauncherApp() {
                 "drawer" -> DrawerScreen(
                     apps = apps,
                     onBack = { screen = "home" },
+                    onOpenSettings = { screen = "settings" },
                     onLaunch = { app ->
                         screen = "home"
                         AppRepository.launch(context, app)

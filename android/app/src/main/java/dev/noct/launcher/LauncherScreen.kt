@@ -55,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -130,7 +131,7 @@ fun HomeScreen(
                 when (section) {
                     "clock" -> if (prefs.showClock) {
                         EditableSection(
-                            title = "Reloj",
+                            title = stringResource(R.string.section_clock),
                             section = section,
                             editing = editMode,
                             canUp = canUp,
@@ -147,7 +148,7 @@ fun HomeScreen(
 
                     "battery" -> if (prefs.showBattery) {
                         EditableSection(
-                            title = "Batería",
+                            title = stringResource(R.string.section_battery),
                             section = section,
                             editing = editMode,
                             canUp = canUp,
@@ -160,7 +161,7 @@ fun HomeScreen(
 
                     "recents" -> if (prefs.showRecents) {
                         EditableSection(
-                            title = "Apps activas",
+                            title = stringResource(R.string.section_recents),
                             section = section,
                             editing = editMode,
                             canUp = canUp,
@@ -179,7 +180,7 @@ fun HomeScreen(
 
                     "sync" -> if (prefs.showSync) {
                         EditableSection(
-                            title = "Tema",
+                            title = stringResource(R.string.section_theme),
                             section = section,
                             editing = editMode,
                             canUp = canUp,
@@ -228,7 +229,7 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "apps",
+                text = stringResource(R.string.home_apps),
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                 modifier = Modifier.clickable(onClick = onOpenDrawer),
@@ -242,7 +243,7 @@ fun HomeScreen(
                     .clickable(onClick = onOpenDrawer)
             )
             Text(
-                text = if (editMode) "listo" else "ajustes",
+                text = stringResource(if (editMode) R.string.home_done else R.string.home_settings),
                 fontSize = 10.sp,
                 color = if (editMode) {
                     MaterialTheme.colorScheme.primary
@@ -294,14 +295,14 @@ private fun EditableSection(
                         enabled = canUp,
                         modifier = Modifier.size(30.dp),
                     ) {
-                        Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Subir")
+                        Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = stringResource(R.string.move_up))
                     }
                     IconButton(
                         onClick = { onMove(section, 1) },
                         enabled = canDown,
                         modifier = Modifier.size(30.dp),
                     ) {
-                        Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Bajar")
+                        Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = stringResource(R.string.move_down))
                     }
                 }
             }
@@ -402,7 +403,7 @@ private fun BatteryWidget(battery: BatteryInfo) {
         if (battery.charging) {
             Spacer(Modifier.width(8.dp))
             Text(
-                text = "cargando",
+                text = stringResource(R.string.battery_charging),
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -441,25 +442,25 @@ private fun RecentsCarousel(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "ACTIVAS",
+                text = stringResource(R.string.recents_active_upper),
                 fontSize = 10.sp,
                 letterSpacing = 1.5.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             )
             Text(
-                text = if (recents.isEmpty()) "" else "aprox · desliza · toca",
+                text = if (recents.isEmpty()) "" else stringResource(R.string.recents_hint),
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
             )
         }
         if (recents.isEmpty()) {
             Text(
-                text = if (hasUsageAccess) "Sin apps recientes" else "Sin acceso de uso",
+                text = if (hasUsageAccess) stringResource(R.string.recents_empty) else stringResource(R.string.recents_no_access),
                 fontSize = 17.sp,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = if (hasUsageAccess) "Abre una app y vuelve" else "Toca para dar acceso",
+                text = if (hasUsageAccess) stringResource(R.string.recents_empty_hint) else stringResource(R.string.recents_access_hint),
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
                 modifier = Modifier.clickable {
@@ -513,7 +514,7 @@ private fun RecentsCarousel(
                     ) {
                         Icon(
                             Icons.Outlined.Close,
-                            contentDescription = "Cerrar app",
+                            contentDescription = stringResource(R.string.close_app),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
                         )
                     }
@@ -534,18 +535,18 @@ private fun SyncWidget(themeName: String?, onOpenSync: () -> Unit) {
             .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
         Text(
-            text = "TEMA",
+            text = stringResource(R.string.theme_upper),
             fontSize = 10.sp,
             letterSpacing = 1.5.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
         )
         Text(
-            text = themeName ?: "Sin sincronizar",
+            text = themeName ?: stringResource(R.string.theme_unsynced),
             fontSize = 15.sp,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = if (themeName == null) "Toca para sincronizar" else "Sincronizado con el escritorio",
+            text = if (themeName == null) stringResource(R.string.theme_tap_sync) else stringResource(R.string.theme_synced),
             fontSize = 10.sp,
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
         )

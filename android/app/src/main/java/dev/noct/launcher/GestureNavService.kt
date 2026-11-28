@@ -9,8 +9,8 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
+import android.os.SystemClock
 import android.provider.Settings
-import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -22,6 +22,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import rikka.shizuku.Shizuku
@@ -29,9 +31,9 @@ import rikka.shizuku.Shizuku
 /**
  * Handle flotante para cambiar de app con un gesto, sin root.
  *
- * - Deslizar hacia arriba: siguiente app viva.
- * - Deslizar hacia abajo: anterior.
- * - Toque: home.
+ * - Deslizar a la izquierda: app anterior; a la derecha: siguiente.
+ * - Arriba/abajo siguen funcionando como alias (el eje dominante decide).
+ * - Un toque y doble toque ejecutan la acción configurada en Ajustes.
  *
  * La lista de apps vivas es una aproximación con UsageStats (Android no expone
  * las tareas de otras apps). Si Shizuku está activo se usan las tareas reales
@@ -39,6 +41,10 @@ import rikka.shizuku.Shizuku
  * Sin Shizuku se lanza la app con su intent de launcher.
  */
 class GestureNavService : AccessibilityService() {
+
+    private companion object {
+        const val DOUBLE_TAP_MS = 300
+    }
 
     private lateinit var windowManager: WindowManager
     private var handle: View? = null
@@ -51,18 +57,29 @@ class GestureNavService : AccessibilityService() {
     private var pendingTarget: String? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    private var downX = 0f
     private var downY = 0f
     private var downAt = 0L
     private var dragging = false
+    private var tapJob: Job? = null
+    private var lastTapAt = 0L
 
     private val binderReceivedListener =
         Shizuku.OnBinderReceivedListener { ShizukuBridge.bind(this) }
     private val binderDeadListener =
         Shizuku.OnBinderDeadListener { ShizukuBridge.invalidate() }
 
+    private val styleKeys = setOf(
+        "gestureHandle",
+        "gestureSize",
+        "gestureColor",
+        "gestureOpacity",
+        "gestureShape",
+    )
+
     private val prefsListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key != null && key.startsWith("gesture")) updateHandle()
+            if (key != null && key in styleKeys) updateHandle()
         }
 
     override fun onServiceConnected() {
@@ -163,7 +180,7 @@ class GestureNavService : AccessibilityService() {
                 setStroke((1 * density).toInt(), Color.argb(200, 255, 255, 255))
             }
             alpha = (prefs.gestureOpacity.coerceIn(10, 100)) / 100f
-            contentDescription = "Cambiar de app"
+            contentDescription = getString(R.string.handle_description)
             setOnTouchListener { v, event -> handleTouch(v, event) }
         }
 
@@ -193,31 +210,83 @@ class GestureNavService : AccessibilityService() {
         val density = resources.displayMetrics.density
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                downX = event.rawX
                 downY = event.rawY
                 downAt = System.currentTimeMillis()
                 dragging = false
             }
 
             MotionEvent.ACTION_MOVE -> {
+                val dx = event.rawX - downX
                 val dy = event.rawY - downY
-                if (abs(dy) > 6 * density) dragging = true
+                if (abs(dx) > 6 * density || abs(dy) > 6 * density) {
+                    if (!dragging) {
+                        // Un deslizamiento cancela el toque simple pendiente.
+                        tapJob?.cancel()
+                        lastTapAt = 0L
+                    }
+                    dragging = true
+                }
+                view.translationX = dx * 0.3f
                 view.translationY = dy * 0.3f
             }
 
             MotionEvent.ACTION_UP -> {
+                val dx = event.rawX - downX
                 val dy = event.rawY - downY
                 val elapsed = System.currentTimeMillis() - downAt
+                val threshold = 40 * density
+                view.translationX = 0f
                 view.translationY = 0f
                 when {
-                    !dragging && elapsed < 300 -> performGlobalAction(GLOBAL_ACTION_HOME)
-                    dy <= -40 * density -> switchApp(1)
-                    dy >= 40 * density -> switchApp(-1)
+                    !dragging && elapsed < 300 -> handleTap()
+                    abs(dx) >= abs(dy) && dx <= -threshold -> switchApp(-1)
+                    abs(dx) >= abs(dy) && dx >= threshold -> switchApp(1)
+                    dy <= -threshold -> switchApp(1)
+                    dy >= threshold -> switchApp(-1)
                 }
             }
 
-            MotionEvent.ACTION_CANCEL -> view.translationY = 0f
+            MotionEvent.ACTION_CANCEL -> {
+                view.translationX = 0f
+                view.translationY = 0f
+            }
         }
         return true
+    }
+
+    private fun handleTap() {
+        val now = SystemClock.uptimeMillis()
+        if (now - lastTapAt in 1..DOUBLE_TAP_MS) {
+            lastTapAt = 0L
+            tapJob?.cancel()
+            performTap(doubleTap = true)
+            return
+        }
+        lastTapAt = now
+        tapJob = scope.launch {
+            delay(DOUBLE_TAP_MS.toLong())
+            performTap(doubleTap = false)
+        }
+    }
+
+    private fun performTap(doubleTap: Boolean) {
+        val prefs = Prefs(this).load()
+        val action = if (doubleTap) prefs.gestureDoubleTapAction else prefs.gestureTapAction
+        val target = when (action) {
+            GestureTapAction.APPS -> "drawer"
+            GestureTapAction.SETTINGS -> "settings"
+            else -> "home"
+        }
+        openLauncher(target)
+    }
+
+    private fun openLauncher(screen: String) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra(MainActivity.EXTRA_SCREEN, screen)
+        }
+        runCatching { startActivity(intent) }
     }
 
     private suspend fun loadApps(): List<AppEntry> = withContext(Dispatchers.IO) {
@@ -256,7 +325,7 @@ class GestureNavService : AccessibilityService() {
                     }
                     Toast.makeText(
                         this@GestureNavService,
-                        "Shizuku: ${ShizukuBridge.lastError()}",
+                        getString(R.string.shizuku_error, ShizukuBridge.lastError()),
                         Toast.LENGTH_LONG,
                     ).show()
                     cycle = emptyList()

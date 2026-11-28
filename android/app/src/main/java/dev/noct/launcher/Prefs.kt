@@ -4,6 +4,12 @@ import android.content.Context
 
 val DefaultHomeOrder = listOf("clock", "battery", "recents", "widgets", "sync")
 
+object GestureTapAction {
+    const val HOME = 0
+    const val APPS = 1
+    const val SETTINGS = 2
+}
+
 data class LauncherPrefs(
     val homeOrder: List<String> = DefaultHomeOrder,
     val showClock: Boolean = true,
@@ -20,6 +26,8 @@ data class LauncherPrefs(
     val gestureColor: String = "#7CFFB2",
     val gestureOpacity: Int = 60,
     val gestureShape: Int = 0,
+    val gestureTapAction: Int = GestureTapAction.HOME,
+    val gestureDoubleTapAction: Int = GestureTapAction.APPS,
 )
 
 class Prefs(context: Context) {
@@ -44,6 +52,8 @@ class Prefs(context: Context) {
         gestureColor = sp.getString("gestureColor", "#7CFFB2") ?: "#7CFFB2",
         gestureOpacity = sp.getInt("gestureOpacity", 60),
         gestureShape = sp.getInt("gestureShape", 0),
+        gestureTapAction = sp.getInt("gestureTapAction", GestureTapAction.HOME),
+        gestureDoubleTapAction = sp.getInt("gestureDoubleTapAction", GestureTapAction.APPS),
         dismissed = sp.getStringSet("dismissed", emptySet())
             ?.mapNotNull { entry ->
                 val separator = entry.lastIndexOf(':')
@@ -68,6 +78,8 @@ class Prefs(context: Context) {
             .putString("gestureColor", prefs.gestureColor)
             .putInt("gestureOpacity", prefs.gestureOpacity)
             .putInt("gestureShape", prefs.gestureShape)
+            .putInt("gestureTapAction", prefs.gestureTapAction)
+            .putInt("gestureDoubleTapAction", prefs.gestureDoubleTapAction)
             .putString("serverUrl", prefs.serverUrl)
             .putString("token", prefs.token)
             .putString("themeJson", prefs.themeJson)

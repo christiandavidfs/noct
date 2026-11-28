@@ -47,9 +47,9 @@ object AppRepository {
                     null
                 } else {
                     when (userId) {
-                        10 -> "Perfil 10"
-                        11 -> "Clon"
-                        else -> "Perfil $userId"
+                        10 -> context.getString(R.string.profile_10)
+                        11 -> context.getString(R.string.profile_clone)
+                        else -> context.getString(R.string.profile_number, userId)
                     }
                 }
                 val label = if (profileLabel != null) "$rawLabel · $profileLabel" else rawLabel

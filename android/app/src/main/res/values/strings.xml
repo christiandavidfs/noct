@@ -1,6 +1,139 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Noct</string>
-    <string name="gesture_service_label">Noct Gestos</string>
-    <string name="gesture_service_description">Handle flotante para cambiar de app: desliza arriba o abajo para ir a la siguiente o anterior; toca para ir al home.</string>
+
+    <!-- Accessibility service -->
+    <string name="gesture_service_label">Noct Gestures</string>
+    <string name="gesture_service_description">Floating handle: swipe left for the previous app and right for the next; tap or double tap to run your chosen action.</string>
+    <string name="handle_description">Switch apps</string>
+
+    <!-- Common -->
+    <string name="back">Back</string>
+    <string name="settings_title">Noct settings</string>
+    <string name="action_home">Home</string>
+    <string name="action_apps">Apps</string>
+    <string name="action_settings">Settings</string>
+
+    <!-- Home -->
+    <string name="section_clock">Clock</string>
+    <string name="section_battery">Battery</string>
+    <string name="section_recents">Active apps</string>
+    <string name="section_theme">Theme</string>
+    <string name="home_apps">apps</string>
+    <string name="home_done">done</string>
+    <string name="home_settings">settings</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="battery_charging">charging</string>
+    <string name="recents_active_upper">ACTIVE</string>
+    <string name="recents_hint">approx · swipe · tap</string>
+    <string name="recents_empty">No recent apps</string>
+    <string name="recents_no_access">No usage access</string>
+    <string name="recents_empty_hint">Open an app and come back</string>
+    <string name="recents_access_hint">Tap to grant access</string>
+    <string name="close_app">Close app</string>
+    <string name="theme_upper">THEME</string>
+    <string name="theme_unsynced">Not synced</string>
+    <string name="theme_synced">Synced with desktop</string>
+    <string name="theme_tap_sync">Tap to sync</string>
+
+    <!-- Drawer -->
+    <string name="drawer_title">Apps</string>
+    <string name="search_placeholder">Search…</string>
+
+    <!-- Settings -->
+    <string name="settings_widgets_android">Android widgets</string>
+    <string name="settings_manage_widgets">Add or remove widgets</string>
+    <string name="settings_android_widgets_desc">Real Android widgets are placed on the home screen.</string>
+    <string name="settings_home_widgets">Home widgets</string>
+    <string name="settings_clock">Clock</string>
+    <string name="settings_clock_desc">Large time and date</string>
+    <string name="settings_battery">Battery</string>
+    <string name="settings_battery_desc">Level and charging state</string>
+    <string name="settings_recents">Active apps (approx.)</string>
+    <string name="settings_recents_desc">Carousel of apps that are still alive</string>
+    <string name="settings_synced_theme">Synced theme</string>
+    <string name="settings_synced_theme_desc">Theme name and sync access</string>
+    <string name="settings_clock_24h">24-hour clock</string>
+    <string name="settings_clock_24h_desc">Turn off for 12-hour format</string>
+    <string name="settings_edit_home">Edit home (move items)</string>
+    <string name="settings_switch_apps">Switch apps</string>
+    <string name="settings_switch_apps_desc">The home shows a horizontal carousel with the apps UsageStats considers active. This is an approximation: swipe, tap to open, and use X to remove one.</string>
+    <string name="settings_handle">Gesture handle</string>
+    <string name="settings_handle_desc">Swipe left or right to switch apps; tap and double tap run your chosen actions</string>
+    <string name="settings_size">Size</string>
+    <string name="size_small">Small</string>
+    <string name="size_medium">Medium</string>
+    <string name="size_large">Large</string>
+    <string name="settings_color">Color</string>
+    <string name="settings_opacity">Opacity: %1$d%%</string>
+    <string name="settings_shape">Shape</string>
+    <string name="shape_pill">Pill</string>
+    <string name="shape_circle">Circle</string>
+    <string name="shape_square">Square</string>
+    <string name="settings_clicks">Clicks</string>
+    <string name="settings_single_tap">Single tap</string>
+    <string name="settings_double_tap">Double tap</string>
+    <string name="settings_accessibility_on">Accessibility service active: the floating handle is available.</string>
+    <string name="settings_accessibility_off">Accessibility service is off. Enable it in Settings → Accessibility for the handle to work.</string>
+    <string name="settings_accessibility_review">Review accessibility service</string>
+    <string name="settings_accessibility_enable">Enable accessibility service</string>
+    <string name="settings_shizuku">Shizuku (real switching)</string>
+    <string name="shizuku_installed_stopped">Shizuku is installed but not running. Open it and start it (wireless debugging or ADB).\n\nTip: once started you can turn off USB debugging; Shizuku keeps running until you reboot the phone.</string>
+    <string name="shizuku_not_installed">Shizuku is not installed. It is required to switch tasks without relaunching apps; without it, gestures use approximate mode.</string>
+    <string name="shizuku_no_permission">Shizuku is running, but Noct does not have permission to use it.</string>
+    <string name="shizuku_ready">Shizuku ready: gestures switch tasks without relaunching the app.</string>
+    <string name="shizuku_checking">Checking Shizuku…</string>
+    <string name="shizuku_install">Install Shizuku</string>
+    <string name="shizuku_open">Open Shizuku</string>
+    <string name="shizuku_grant">Grant permission to Noct</string>
+    <string name="shizuku_error">Shizuku: %1$s</string>
+    <string name="settings_usage_granted">Usage access granted. Noct estimates active apps with UsageStats.</string>
+    <string name="settings_usage_denied">No usage access. Android does not allow estimating which apps are still active.</string>
+    <string name="settings_usage_review">Review usage access</string>
+    <string name="settings_usage_grant">Grant usage access</string>
+    <string name="settings_usage_clones">System clones (for example Motorola\'s dual WhatsApp) may not appear: Android does not expose them to third-party launchers.</string>
+    <string name="settings_theme_sync">Theme &amp; sync</string>
+    <string name="settings_sync_desktop">Sync with desktop</string>
+    <string name="settings_no_theme">No synced theme. Run noct sync serve on the desktop.</string>
+    <string name="settings_theme_available">Synced theme available.</string>
+    <string name="settings_reset">Reset settings</string>
+
+    <!-- Widgets -->
+    <string name="widgets_title">Widgets</string>
+    <string name="widgets_add">Add widget</string>
+    <string name="widgets_home_desc">Widgets are placed on the home screen, below the clock.</string>
+    <string name="widgets_empty">No widgets yet.</string>
+    <string name="widgets_remove">Remove</string>
+
+    <!-- Widget picker -->
+    <string name="picker_title">Add widget</string>
+    <string name="picker_added">Widget added</string>
+    <string name="picker_cancelled">Widget permission cancelled</string>
+    <string name="picker_no_preview">This widget has no preview. It will be added to the home screen and you can resize it in edit mode.</string>
+    <string name="picker_add">Add</string>
+    <string name="widget_unavailable">Widget unavailable</string>
+    <string name="widget_resize">↕ resize</string>
+    <string name="error_empty_url">Empty URL</string>
+    <string name="picker_cancel">Cancel</string>
+
+    <!-- Sync -->
+    <string name="sync_title">Sync theme</string>
+    <string name="sync_desktop_hint">On the desktop run:</string>
+    <string name="sync_copy_hint">Copy the URL and token printed by the server.</string>
+    <string name="sync_url_label">Desktop URL</string>
+    <string name="sync_token_label">Token</string>
+    <string name="sync_theme_synced">Theme “%1$s” synced</string>
+    <string name="sync_wallpaper_applied"> and wallpaper applied.</string>
+    <string name="sync_error">Error: %1$s</string>
+    <string name="sync_busy">Syncing…</string>
+    <string name="sync_now">Sync now</string>
+    <string name="sync_current_theme">Current theme</string>
+    <string name="sync_dark">Dark mode</string>
+    <string name="sync_light">Light mode</string>
+
+    <!-- Profiles -->
+    <string name="profile_10">Profile 10</string>
+    <string name="profile_clone">Clone</string>
+    <string name="profile_number">Profile %1$d</string>
 </resources>

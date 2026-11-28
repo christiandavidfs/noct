@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.dp
@@ -65,12 +66,12 @@ fun SettingsScreen(
         containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.94f),
         topBar = {
             TopAppBar(
-                title = { Text("Ajustes de Noct") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Volver",
+                            contentDescription = stringResource(R.string.back),
                         )
                     }
                 },
@@ -89,13 +90,13 @@ fun SettingsScreen(
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item { SectionTitle("Widgets de Android") }
+            item { SectionTitle(stringResource(R.string.settings_widgets_android)) }
             item {
                 Button(onClick = onOpenWidgets, modifier = Modifier.fillMaxWidth()) {
-                    Text("Añadir o quitar widgets")
+                    Text(stringResource(R.string.settings_manage_widgets))
                 }
                 Text(
-                    text = "Los widgets reales de Android se colocan en el home.",
+                    text = stringResource(R.string.settings_android_widgets_desc),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 6.dp),
@@ -104,43 +105,43 @@ fun SettingsScreen(
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
 
-            item { SectionTitle("Widgets del home") }
+            item { SectionTitle(stringResource(R.string.settings_home_widgets)) }
             item {
                 SwitchSetting(
-                    title = "Reloj",
-                    description = "Hora y fecha grandes",
+                    title = stringResource(R.string.settings_clock),
+                    description = stringResource(R.string.settings_clock_desc),
                     checked = prefs.showClock,
                     onChange = { onChange(prefs.copy(showClock = it)) },
                 )
             }
             item {
                 SwitchSetting(
-                    title = "Batería",
-                    description = "Nivel y estado de carga",
+                    title = stringResource(R.string.settings_battery),
+                    description = stringResource(R.string.settings_battery_desc),
                     checked = prefs.showBattery,
                     onChange = { onChange(prefs.copy(showBattery = it)) },
                 )
             }
             item {
                 SwitchSetting(
-                    title = "Apps activas (aprox.)",
-                    description = "Carrusel de apps que siguen vivas",
+                    title = stringResource(R.string.settings_recents),
+                    description = stringResource(R.string.settings_recents_desc),
                     checked = prefs.showRecents,
                     onChange = { onChange(prefs.copy(showRecents = it)) },
                 )
             }
             item {
                 SwitchSetting(
-                    title = "Tema sincronizado",
-                    description = "Nombre del tema y acceso a sync",
+                    title = stringResource(R.string.settings_synced_theme),
+                    description = stringResource(R.string.settings_synced_theme_desc),
                     checked = prefs.showSync,
                     onChange = { onChange(prefs.copy(showSync = it)) },
                 )
             }
             item {
                 SwitchSetting(
-                    title = "Reloj 24 h",
-                    description = "Desactiva para formato 12 h",
+                    title = stringResource(R.string.settings_clock_24h),
+                    description = stringResource(R.string.settings_clock_24h_desc),
                     checked = prefs.clock24h,
                     onChange = { onChange(prefs.copy(clock24h = it)) },
                 )
@@ -150,31 +151,31 @@ fun SettingsScreen(
                     onClick = onOpenEditHome,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Editar home (mover elementos)")
+                    Text(stringResource(R.string.settings_edit_home))
                 }
             }
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
 
-            item { SectionTitle("Cambiar de app") }
+            item { SectionTitle(stringResource(R.string.settings_switch_apps)) }
             item {
                 Text(
-                    text = "El home muestra un carrusel horizontal con las apps que UsageStats considera activas. Es una aproximación: desliza con un dedo, toca para abrir y usa la X para quitarla.",
+                    text = stringResource(R.string.settings_switch_apps_desc),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             item {
                 SwitchSetting(
-                    title = "Handle de gestos",
-                    description = "Desliza arriba/abajo para cambiar de app; toca para ir al home",
+                    title = stringResource(R.string.settings_handle),
+                    description = stringResource(R.string.settings_handle_desc),
                     checked = prefs.gestureHandle,
                     onChange = { onChange(prefs.copy(gestureHandle = it)) },
                 )
             }
             item {
                 Text(
-                    text = "Tamaño",
+                    text = stringResource(R.string.settings_size),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -183,18 +184,18 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(top = 6.dp),
                 ) {
-                    listOf("Pequeño" to 0, "Mediano" to 1, "Grande" to 2).forEach { (label, value) ->
+                    listOf(R.string.size_small to 0, R.string.size_medium to 1, R.string.size_large to 2).forEach { (label, value) ->
                         FilterChip(
                             selected = prefs.gestureSize == value,
                             onClick = { onChange(prefs.copy(gestureSize = value)) },
-                            label = { Text(label) },
+                            label = { Text(stringResource(label)) },
                         )
                     }
                 }
             }
             item {
                 Text(
-                    text = "Color",
+                    text = stringResource(R.string.settings_color),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -227,7 +228,7 @@ fun SettingsScreen(
             }
             item {
                 Text(
-                    text = "Opacidad: ${prefs.gestureOpacity}%",
+                    text = stringResource(R.string.settings_opacity, prefs.gestureOpacity),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -240,7 +241,7 @@ fun SettingsScreen(
             }
             item {
                 Text(
-                    text = "Forma",
+                    text = stringResource(R.string.settings_shape),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -249,24 +250,41 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(top = 6.dp),
                 ) {
-                    listOf("Pastilla" to 0, "Círculo" to 1, "Cuadrado" to 2).forEach { (label, value) ->
+                    listOf(R.string.shape_pill to 0, R.string.shape_circle to 1, R.string.shape_square to 2).forEach { (label, value) ->
                         FilterChip(
                             selected = prefs.gestureShape == value,
                             onClick = { onChange(prefs.copy(gestureShape = value)) },
-                            label = { Text(label) },
+                            label = { Text(stringResource(label)) },
                         )
                     }
                 }
             }
+            item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
+
+            item { SectionTitle(stringResource(R.string.settings_clicks)) }
+            item {
+                TapActionRow(
+                    title = stringResource(R.string.settings_single_tap),
+                    selected = prefs.gestureTapAction,
+                    onSelect = { onChange(prefs.copy(gestureTapAction = it)) },
+                )
+            }
+            item {
+                TapActionRow(
+                    title = stringResource(R.string.settings_double_tap),
+                    selected = prefs.gestureDoubleTapAction,
+                    onSelect = { onChange(prefs.copy(gestureDoubleTapAction = it)) },
+                )
+            }
+
             item {
                 val context = LocalContext.current
                 val enabled = isGestureServiceEnabled(context)
                 Text(
-                    text = if (enabled) {
-                        "Servicio de accesibilidad activo: el handle flotante está disponible."
-                    } else {
-                        "Servicio de accesibilidad desactivado. Actívalo en Ajustes → Accesibilidad para que el handle funcione."
-                    },
+                    text = stringResource(
+                        if (enabled) R.string.settings_accessibility_on
+                        else R.string.settings_accessibility_off
+                    ),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -284,15 +302,17 @@ fun SettingsScreen(
                         .padding(top = 8.dp),
                 ) {
                     Text(
-                        if (enabled) "Revisar servicio de accesibilidad"
-                        else "Activar servicio de accesibilidad"
+                        stringResource(
+                            if (enabled) R.string.settings_accessibility_review
+                            else R.string.settings_accessibility_enable
+                        )
                     )
                 }
             }
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
 
-            item { SectionTitle("Shizuku (cambio real)") }
+            item { SectionTitle(stringResource(R.string.settings_shizuku)) }
             item {
                 val context = LocalContext.current
                 var state by remember { mutableIntStateOf(-1) }
@@ -315,21 +335,13 @@ fun SettingsScreen(
                 }
                 Text(
                     text = when (state) {
-                        0 -> if (installed) {
-                            "Shizuku está instalado pero no en ejecución. Ábrelo y arráncalo " +
-                                "(depuración inalámbrica o ADB).\n\n" +
-                                "Consejo: una vez arrancado puedes desactivar la depuración USB; " +
-                                "Shizuku sigue funcionando hasta reiniciar el móvil."
-                        } else {
-                            "Shizuku no está instalado. Es necesario para cambiar de tarea sin " +
-                                "relanzar las apps; sin él, los gestos usan el modo aproximado."
-                        }
-                        1 ->
-                            "Shizuku está activo, pero Noct no tiene permiso para usarlo."
-                        2 ->
-                            "Shizuku listo: los gestos cambian de tarea sin relanzar la app."
-                        else ->
-                            "Comprobando Shizuku…"
+                        0 -> stringResource(
+                            if (installed) R.string.shizuku_installed_stopped
+                            else R.string.shizuku_not_installed
+                        )
+                        1 -> stringResource(R.string.shizuku_no_permission)
+                        2 -> stringResource(R.string.shizuku_ready)
+                        else -> stringResource(R.string.shizuku_checking)
                     },
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -347,7 +359,7 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .padding(top = 8.dp),
                     ) {
-                        Text("Instalar Shizuku")
+                        Text(stringResource(R.string.shizuku_install))
                     }
 
                     state == 0 -> OutlinedButton(
@@ -363,7 +375,7 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .padding(top = 8.dp),
                     ) {
-                        Text("Abrir Shizuku")
+                        Text(stringResource(R.string.shizuku_open))
                     }
 
                     state == 1 -> OutlinedButton(
@@ -372,21 +384,20 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .padding(top = 8.dp),
                     ) {
-                        Text("Conceder permiso a Noct")
+                        Text(stringResource(R.string.shizuku_grant))
                     }
                 }
             }
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
 
-            item { SectionTitle("Apps activas (aprox.)") }
+            item { SectionTitle(stringResource(R.string.settings_recents)) }
             item {
                 Text(
-                    text = if (hasUsageAccess) {
-                        "Acceso de uso concedido. Noct estima las apps activas con UsageStats."
-                    } else {
-                        "Sin acceso de uso. Android no deja estimar qué apps siguen activas."
-                    },
+                    text = stringResource(
+                        if (hasUsageAccess) R.string.settings_usage_granted
+                        else R.string.settings_usage_denied
+                    ),
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -396,10 +407,10 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .padding(top = 8.dp),
                 ) {
-                    Text(if (hasUsageAccess) "Revisar acceso de uso" else "Dar acceso de uso")
+                    Text(stringResource(if (hasUsageAccess) R.string.settings_usage_review else R.string.settings_usage_grant))
                 }
                 Text(
-                    text = "Los clones del sistema (p. ej. el WhatsApp duplicado de Motorola) pueden no aparecer: Android no los expone a launchers de terceros.",
+                    text = stringResource(R.string.settings_usage_clones),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                     modifier = Modifier.padding(top = 8.dp),
@@ -408,17 +419,16 @@ fun SettingsScreen(
 
             item { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }
 
-            item { SectionTitle("Tema y sync") }
+            item { SectionTitle(stringResource(R.string.settings_theme_sync)) }
             item {
                 Button(onClick = onOpenSync, modifier = Modifier.fillMaxWidth()) {
-                    Text("Sincronizar con el escritorio")
+                    Text(stringResource(R.string.settings_sync_desktop))
                 }
                 Text(
-                    text = if (prefs.themeJson == null) {
-                        "Sin tema sincronizado. Usa noct sync serve en el escritorio."
-                    } else {
-                        "Tema sincronizado disponible."
-                    },
+                    text = stringResource(
+                        if (prefs.themeJson == null) R.string.settings_no_theme
+                        else R.string.settings_theme_available
+                    ),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
@@ -430,7 +440,7 @@ fun SettingsScreen(
                     onClick = { onChange(LauncherPrefs()) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Restablecer ajustes")
+                    Text(stringResource(R.string.settings_reset))
                 }
             }
         }
@@ -464,5 +474,35 @@ private fun SwitchSetting(
             Text(description, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+@Composable
+private fun TapActionRow(
+    title: String,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+) {
+    Text(
+        text = title,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(top = 6.dp),
+    ) {
+        listOf(
+            R.string.action_home to GestureTapAction.HOME,
+            R.string.action_apps to GestureTapAction.APPS,
+            R.string.action_settings to GestureTapAction.SETTINGS,
+        ).forEach { (label, value) ->
+            FilterChip(
+                selected = selected == value,
+                onClick = { onSelect(value) },
+                label = { Text(stringResource(label)) },
+            )
+        }
     }
 }
