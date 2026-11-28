@@ -112,7 +112,7 @@ class GestureNavService : AccessibilityService() {
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
-            x = (6 * density).toInt()
+            x = (28 * density).toInt()
         }
 
         runCatching { windowManager.addView(view, params) }
@@ -169,19 +169,21 @@ class GestureNavService : AccessibilityService() {
             if (alive.size < 2) return@launch
 
             val list = alive.map { it.app }
-            val current = list.indexOfFirst { it.packageName == currentPackage }
-            val index = if (current < 0) {
-                0
+            // Si aún no conocemos la app en primer plano, la más reciente lo es.
+            val currentPkg = currentPackage ?: list.first().packageName
+            val current = list.indexOfFirst { it.packageName == currentPkg }
+            val target = if (current >= 0) {
+                list[((current + direction) % list.size + list.size) % list.size]
             } else {
-                ((current + direction) % list.size + list.size) % list.size
+                list.firstOrNull { it.packageName != currentPkg } ?: list.first()
             }
-            val target = list[index]
-            if (target.packageName == currentPackage) return@launch
+            if (target.packageName == currentPkg) return@launch
 
             val intent = packageManager.getLaunchIntentForPackage(target.packageName)
                 ?: return@launch
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             runCatching { startActivity(intent) }
+            currentPackage = target.packageName
         }
     }
 }
