@@ -16,6 +16,10 @@ data class LauncherPrefs(
     val themeJson: String? = null,
     val dismissed: Map<String, Long> = emptyMap(),
     val gestureHandle: Boolean = true,
+    val gestureSize: Int = 1,
+    val gestureColor: String = "#7CFFB2",
+    val gestureOpacity: Int = 60,
+    val gestureShape: Int = 0,
 )
 
 class Prefs(context: Context) {
@@ -36,6 +40,10 @@ class Prefs(context: Context) {
         token = sp.getString("token", "") ?: "",
         themeJson = sp.getString("themeJson", null),
         gestureHandle = sp.getBoolean("gestureHandle", true),
+        gestureSize = sp.getInt("gestureSize", 1),
+        gestureColor = sp.getString("gestureColor", "#7CFFB2") ?: "#7CFFB2",
+        gestureOpacity = sp.getInt("gestureOpacity", 60),
+        gestureShape = sp.getInt("gestureShape", 0),
         dismissed = sp.getStringSet("dismissed", emptySet())
             ?.mapNotNull { entry ->
                 val separator = entry.lastIndexOf(':')
@@ -56,6 +64,10 @@ class Prefs(context: Context) {
             .putBoolean("showSync", prefs.showSync)
             .putBoolean("clock24h", prefs.clock24h)
             .putBoolean("gestureHandle", prefs.gestureHandle)
+            .putInt("gestureSize", prefs.gestureSize)
+            .putString("gestureColor", prefs.gestureColor)
+            .putInt("gestureOpacity", prefs.gestureOpacity)
+            .putInt("gestureShape", prefs.gestureShape)
             .putString("serverUrl", prefs.serverUrl)
             .putString("token", prefs.token)
             .putString("themeJson", prefs.themeJson)

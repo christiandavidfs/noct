@@ -48,7 +48,7 @@ class GestureNavService : AccessibilityService() {
 
     private val prefsListener =
         SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == "gestureHandle") updateHandle()
+            if (key != null && key.startsWith("gesture")) updateHandle()
         }
 
     override fun onServiceConnected() {
@@ -81,23 +81,49 @@ class GestureNavService : AccessibilityService() {
     }
 
     private fun updateHandle() {
-        if (Prefs(this).load().gestureHandle) showHandle() else removeHandle()
+        removeHandle()
+        if (Prefs(this).load().gestureHandle) showHandle()
     }
 
     private fun showHandle() {
         if (handle != null) return
+        val prefs = Prefs(this).load()
         val density = resources.displayMetrics.density
-        val width = (12 * density).toInt()
-        val height = (110 * density).toInt()
+
+        val widthDp: Int
+        val heightDp: Int
+        when (prefs.gestureShape) {
+            1 -> { // círculo
+                widthDp = when (prefs.gestureSize) { 0 -> 32; 2 -> 52; else -> 42 }
+                heightDp = widthDp
+            }
+            2 -> { // cuadrado
+                widthDp = when (prefs.gestureSize) { 0 -> 24; 2 -> 40; else -> 32 }
+                heightDp = widthDp
+            }
+            else -> { // pastilla
+                widthDp = when (prefs.gestureSize) { 0 -> 8; 2 -> 18; else -> 12 }
+                heightDp = when (prefs.gestureSize) { 0 -> 80; 2 -> 150; else -> 110 }
+            }
+        }
+        val width = (widthDp * density).toInt()
+        val height = (heightDp * density).toInt()
+        val color = runCatching { Color.parseColor(prefs.gestureColor) }
+            .getOrDefault(Color.rgb(124, 255, 178))
+        val radius = when (prefs.gestureShape) {
+            1 -> width / 2f
+            2 -> 4 * density
+            else -> width / 2f
+        }
 
         val view = View(this).apply {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
-                cornerRadius = width.toFloat()
-                setColor(Color.argb(120, 124, 255, 178))
-                setStroke((1 * density).toInt(), Color.argb(190, 190, 240, 212))
+                cornerRadius = radius
+                setColor(color)
+                setStroke((1 * density).toInt(), Color.argb(200, 255, 255, 255))
             }
-            alpha = 0.62f
+            alpha = (prefs.gestureOpacity.coerceIn(10, 100)) / 100f
             contentDescription = "Cambiar de app"
             setOnTouchListener { v, event -> handleTouch(v, event) }
         }

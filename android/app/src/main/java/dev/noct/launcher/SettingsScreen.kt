@@ -2,16 +2,23 @@ package dev.noct.launcher
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -19,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -26,10 +34,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -153,6 +164,92 @@ fun SettingsScreen(
                     checked = prefs.gestureHandle,
                     onChange = { onChange(prefs.copy(gestureHandle = it)) },
                 )
+            }
+            item {
+                Text(
+                    text = "Tamaño",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 6.dp),
+                ) {
+                    listOf("Pequeño" to 0, "Mediano" to 1, "Grande" to 2).forEach { (label, value) ->
+                        FilterChip(
+                            selected = prefs.gestureSize == value,
+                            onClick = { onChange(prefs.copy(gestureSize = value)) },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+            }
+            item {
+                Text(
+                    text = "Color",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    listOf("#7CFFB2", "#FFFFFF", "#FF6B6B", "#6BB5FF", "#FFC46B", "#C49BFF")
+                        .forEach { hex ->
+                            val selected = prefs.gestureColor == hex
+                            Box(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(android.graphics.Color.parseColor(hex)))
+                                    .border(
+                                        width = if (selected) 2.dp else 1.dp,
+                                        color = if (selected) {
+                                            MaterialTheme.colorScheme.onSurface
+                                        } else {
+                                            MaterialTheme.colorScheme.outlineVariant
+                                        },
+                                        shape = CircleShape,
+                                    )
+                                    .clickable { onChange(prefs.copy(gestureColor = hex)) }
+                            )
+                        }
+                }
+            }
+            item {
+                Text(
+                    text = "Opacidad: ${prefs.gestureOpacity}%",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Slider(
+                    value = prefs.gestureOpacity.toFloat(),
+                    onValueChange = { onChange(prefs.copy(gestureOpacity = it.roundToInt())) },
+                    valueRange = 20f..100f,
+                )
+            }
+            item {
+                Text(
+                    text = "Forma",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 6.dp),
+                ) {
+                    listOf("Pastilla" to 0, "Círculo" to 1, "Cuadrado" to 2).forEach { (label, value) ->
+                        FilterChip(
+                            selected = prefs.gestureShape == value,
+                            onClick = { onChange(prefs.copy(gestureShape = value)) },
+                            label = { Text(label) },
+                        )
+                    }
+                }
             }
             item {
                 val context = LocalContext.current
