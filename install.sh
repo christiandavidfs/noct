@@ -680,6 +680,19 @@ ensure_umbriel_config() {
   [ -n "$example" ] || { warn "$(say 'Umbriel did not leave an example config.toml; it will be created when the session starts' 'Umbriel no dejó config.toml de ejemplo; se creará al iniciar la sesión')"; return 0; }
   run mkdir -p "$HOME/.config/umbriel"
   run cp "$example" "$cfg"
+  # Fragmentos gestionados por Noct (efectos, bridge…) que la config incluye.
+  local skel_dir="$REPO_DIR/iso/profile/airootfs/etc/skel/.config/umbriel"
+  if [ -d "$skel_dir/noct" ]; then
+    run mkdir -p "$HOME/.config/umbriel/noct"
+    run cp -a "$skel_dir/noct/." "$HOME/.config/umbriel/noct/"
+  fi
+  # Layout de teclado del sistema en la config de Rakia.
+  if [ "$DRY_RUN" -eq 0 ]; then
+    local layout
+    layout="$(sed -n 's/^KEYMAP=//p' /etc/vconsole.conf 2>/dev/null | head -n1)"
+    case "$layout" in "" | *[!a-z]*) layout="" ;; esac
+    [ -n "$layout" ] && sed -i "s/^layout = \"es\"$/layout = \"$layout\"/" "$cfg"
+  fi
   # El ejemplo trae autostart comentado; Noctalia debe arrancar con la sesión.
   if [ "$DRY_RUN" -eq 0 ]; then
     if need_cmd python3; then

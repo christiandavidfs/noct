@@ -2,6 +2,17 @@
 # Referencia: https://docs.noctalia.dev/umbriel/
 # Los cambios se aplican al guardar; valida con: umbriel config validate
 
+# Incluye los fragmentos gestionados por Noct/Noctalia (teclado, efectos, tema).
+[include]
+files = []
+
+[include.optional]
+files = ["noct/effects.toml", "noctalia.toml"]
+
+[events]
+lid_close = "umbriel msg output-disable eDP-1"
+lid_open = "umbriel msg output-enable eDP-1"
+
 [general]
 autostart = ["noctalia"]
 show_cheatsheet = false
@@ -38,6 +49,14 @@ workspace_background = "#000000FF"
 layout = "es"
 numlock_toggle = true
 
+[input.touchpad]
+tap = true
+natural_scroll = true
+disable_while_typing = false
+
+[input.mouse]
+natural_scroll = false
+
 [input.focus]
 follows_mouse = "sloppy"
 
@@ -49,30 +68,78 @@ default_extent_fraction = 0.5
 
 [keybinds]
 
-# Aplicaciones y sesión
+"Alt+Print" = "spawn noct msg screenshot-annotate"
+"Ctrl+Alt+Delete" = "session-quit"
+"Ctrl+Print" = "spawn noct msg screenshot-fullscreen"
+"Mod+Alt+L" = "spawn noct msg session lock"
+"Mod+B" = "spawn brave"
+"Mod+BracketLeft" = "window-consume-or-expel-left"
+"Mod+BracketRight" = "window-consume-or-expel-right"
+"Mod+C" = "column-center"
+"Mod+Ctrl+1" = "column-move-to-workspace 1"
+"Mod+Ctrl+2" = "column-move-to-workspace 2"
+"Mod+Ctrl+3" = "column-move-to-workspace 3"
+"Mod+Ctrl+4" = "column-move-to-workspace 4"
+"Mod+Ctrl+5" = "column-move-to-workspace 5"
+"Mod+Ctrl+6" = "column-move-to-workspace 6"
+"Mod+Ctrl+7" = "column-move-to-workspace 7"
+"Mod+Ctrl+8" = "column-move-to-workspace 8"
+"Mod+Ctrl+9" = "column-move-to-workspace 9"
+"Mod+Ctrl+End" = "column-move-to-last"
+"Mod+Ctrl+H" = "column-move-left"
+"Mod+Ctrl+Home" = "column-move-to-first"
+"Mod+Ctrl+J" = "window-move-down"
+"Mod+Ctrl+K" = "window-move-up"
+"Mod+Ctrl+L" = "column-move-right"
+"Mod+Ctrl+Left" = "column-move-left"
+"Mod+Ctrl+Return" = "spawn foot"
+"Mod+Ctrl+Shift+Down" = "column-move-to-output-down"
+"Mod+Ctrl+Shift+Left" = "column-move-to-output-left"
+"Mod+Ctrl+Shift+R" = "window-cycle-secondary-extent"
+"Mod+Ctrl+Shift+Right" = "column-move-to-output-right"
+"Mod+Ctrl+Shift+Up" = "column-move-to-output-up"
+"Mod+Ctrl+Shift+WheelDown" = "column-move-right"
+"Mod+Ctrl+Shift+WheelUp" = "column-move-left"
+"Mod+Ctrl+Up" = "window-move-up"
+"Mod+Ctrl+WheelDown" = "column-move-to-workspace-next"
+"Mod+Ctrl+WheelLeft" = "column-move-left"
+"Mod+Ctrl+WheelRight" = "column-move-right"
+"Mod+Ctrl+WheelUp" = "column-move-to-workspace-previous"
+"Mod+E" = "spawn thunar"
+"Mod+End" = "column-focus-last"
+"Mod+Equal" = "window-modify-primary-extent 0.1"
+"Mod+Home" = "column-focus-first"
+"Mod+Minus" = "window-modify-primary-extent -0.1"
+"Mod+S" = "spawn noct msg panel-toggle control-center"
+"Mod+Shift+Equal" = "window-modify-secondary-extent 0.1"
+"Mod+Shift+F" = "window-toggle-fullscreen"
+"Mod+Shift+Minus" = "window-modify-secondary-extent -0.1"
+"Mod+Shift+N" = { action = "spawn noct msg panel-toggle control-center", repeat = false }
+"Mod+Shift+P" = "dpms-off"
+"Mod+Shift+Q" = "spawn noct msg panel-toggle session"
+"Mod+Shift+Return" = "spawn noct msg panel-toggle wallpaper"
+"Mod+Shift+S" = "spawn noct msg settings-toggle"
+"Mod+Shift+V" = "window-focus-switch-floating"
+"Mod+Shift+WheelDown" = "window-focus-right"
+"Mod+Shift+WheelUp" = "window-focus-left"
+"Mod+WheelLeft" = "window-focus-left"
+"Mod+WheelRight" = "window-focus-right"
+"Print" = "spawn noct msg screenshot-region"
+"Shift+Print" = "spawn noct msg screenshot-window"
+"XF86AudioMicMute" = "spawn noct msg mic-mute"
+"XF86AudioNext" = "spawn noct msg media next"
+"XF86AudioPause" = "spawn noct msg media toggle"
+"XF86AudioPlay" = "spawn noct msg media toggle"
+"XF86AudioPrev" = "spawn noct msg media previous"
+"XF86MonBrightnessDown" = "spawn noct msg brightness-down"
+"XF86MonBrightnessUp" = "spawn noct msg brightness-up"
 "Mod" = "spawn noct msg panel-toggle launcher"
 "Mod+Return" = { action = "spawn foot", repeat = false }
-"Mod+B" = { action = "spawn brave", repeat = false }
-"Mod+E" = { action = "spawn thunar", repeat = false }
 "Mod+D" = "spawn noct msg panel-toggle launcher"
 "Mod+Q" = { action = "window-close", repeat = false }
 "Mod+Escape" = "session-quit"
-"Mod+Shift+Escape" = { action = "shortcuts-inhibit-toggle", allow_when_inhibited = true, repeat = false }
-
-# Noctalia
-"Mod+S" = "spawn noct msg panel-toggle control-center"
-"Mod+Shift+S" = "spawn noct msg settings-toggle"
-"Mod+Shift+Return" = "spawn noct msg panel-toggle wallpaper"
-"Mod+Alt+L" = "spawn noct msg session lock"
-"Mod+Shift+Q" = "spawn noct msg panel-toggle session"
+"Mod+Shift+Escape" = { action = "shortcuts-inhibit-toggle", repeat = false }
 "Mod+Shift+D" = "spawn noct msg dock-toggle"
-
-# Capturas
-"Print" = "spawn noct msg screenshot-region"
-"Shift+Print" = "spawn noct msg screenshot-window"
-"Ctrl+Print" = "spawn noct msg screenshot-fullscreen"
-
-# Enfoque y movimiento
 "Mod+Left" = "window-focus-left"
 "Mod+Down" = "window-focus-down"
 "Mod+Up" = "window-focus-up"
@@ -88,8 +155,6 @@ default_extent_fraction = 0.5
 "Mod+Shift+Right" = "column-move-right"
 "Mod+Ctrl+Right" = "window-move-to-output-next"
 "Mod+Ctrl+Down" = "window-move-to-output-next"
-
-# Estado y disposición de ventanas
 "Mod+T" = { action = "window-toggle-floating", repeat = false }
 "Mod+Shift+T" = { action = "window-focus-switch-floating", repeat = false }
 "Mod+P" = { action = "window-toggle-pinned", repeat = false }
@@ -108,8 +173,6 @@ default_extent_fraction = 0.5
 "Mod+WheelUp" = "window-focus-left"
 "Mod+WheelDown" = "window-focus-right"
 "Mod+O" = { action = "overview-toggle", repeat = false }
-
-# Espacios de trabajo
 "Mod+1" = "workspace-switch 1"
 "Mod+2" = "workspace-switch 2"
 "Mod+3" = "workspace-switch 3"
@@ -128,21 +191,14 @@ default_extent_fraction = 0.5
 "Mod+Shift+7" = "window-move-to-workspace 7"
 "Mod+Shift+8" = "window-move-to-workspace 8"
 "Mod+Shift+9" = "window-move-to-workspace 9"
-
-# Scratchpad
 "Mod+Shift+Space" = { action = "window-move-to-scratchpad", repeat = false }
 "Mod+Space" = "scratchpad-toggle"
 "Mod+Ctrl+Space" = { action = "window-restore-from-scratchpad", repeat = false }
 "Mod+Tab" = "scratchpad-focus-next"
-
-# Audio y brillo
 "XF86AudioRaiseVolume" = "spawn noct msg volume-up"
 "XF86AudioLowerVolume" = "spawn noct msg volume-down"
 "XF86AudioMute" = "spawn noct msg volume-mute"
-"XF86MonBrightnessUp" = "spawn noct msg brightness-up"
-"XF86MonBrightnessDown" = "spawn noct msg brightness-down"
 
-# Ventanas y capas de Noctalia
 [[window_rule]]
 blur = true
 blur_optimized = false
