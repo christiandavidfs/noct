@@ -39,6 +39,7 @@ ShellRoot {
         property string lastActiveId: ""
         property int selected: 0
         property bool pendingOpen: false
+        property bool browsing: false
         property bool opening: false
         property bool captureWanted: false
         property bool reveal: false
@@ -190,11 +191,18 @@ ShellRoot {
             return Qt.rect(rx, ry, rw, rh);
         }
 
+        function startBrowsing() {
+            if (!visible || browsing)
+                return;
+            browsing = true;
+            idleTimer.stop();
+        }
+
         function advance(delta) {
             if (list.length === 0)
                 return;
             selected = (selected + delta + list.length) % list.length;
-            idleTimer.restart();
+            startBrowsing();
         }
 
         function closeHud() {
@@ -202,6 +210,7 @@ ShellRoot {
             reveal = false;
             visible = false;
             pendingOpen = false;
+            browsing = false;
             opening = false;
             captureWanted = false;
             shotPath = "";
@@ -217,6 +226,7 @@ ShellRoot {
 
         function showHud() {
             opening = false;
+            browsing = false;
             visible = true;
             reveal = true;
             Qt.callLater(() => keyCatcher.forceActiveFocus());
