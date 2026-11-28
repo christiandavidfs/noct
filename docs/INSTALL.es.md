@@ -195,9 +195,9 @@ Estado actual:
   timer diario), `cachyos-packageinstaller` (tienda con AUR) y `cachyos-kernel-manager`;
 - **apps base**: Brave, Thunar, mousepad y el widget `noct/effects` habilitado en
   Noctalia;
+- **conmutador global Alt+Tab** (Quickshell): todas las ventanas de todos los monitores y
+  workspaces, con previews cuando están visibles y salto directo a la elegida;
 - escritorio por defecto: tema oscuro, fondo de Noga y la marca Kepler en el lanzador/dock.
-- Umbriel cae a renderizado software cuando no hay GL por hardware (VMware o QEMU
-  sin aceleración 3D), así que el live llega igualmente al escritorio.
 - Umbriel cae a renderizado software cuando no hay GL por hardware (VMware o QEMU
   sin aceleración 3D), así que el live llega igualmente al escritorio.
 
@@ -292,6 +292,7 @@ firma el kernel y el bootloader con `sbctl` o usa un shim; queda fuera del alcan
 | Lanzador | `Super` (pulsación) |
 | Lanzador (fallback Niri) | `Mod+D` o `Mod+Space` |
 | Dock | `Mod+Shift+D` |
+| Cambiar de ventana | `Alt+Tab` / `Alt+Shift+Tab` |
 | Centro de control | `Mod+S` |
 | Ajustes de Noctalia | `Mod+Shift+S` |
 | Fondo de pantalla | `Mod+Shift+Return` |
@@ -301,6 +302,33 @@ firma el kernel y el bootloader con `sbctl` o usa un shim; queda fuera del alcan
 | Captura (ventana) | `Shift+Print` |
 | Captura (monitor) | `Ctrl+Print` |
 | Salir de la sesión | `Mod+Escape` |
+
+### Conmutador de ventanas (Alt+Tab)
+
+Rakia incluye un conmutador global hecho con Quickshell (el mismo motor que Noctalia).
+Aparece en el monitor que tiene el foco y lista **todas las ventanas de todos los
+monitores y workspaces**, ordenadas por uso reciente.
+
+| Tecla | Acción |
+| --- | --- |
+| `Alt+Tab` | Abre y selecciona la ventana anterior; confirma solo a los 850 ms |
+| `Alt+Shift+Tab` | Abre empezando por la ventana menos reciente |
+| `Tab` / flechas / rueda | Navega; al navegar se cancela el cierre automático y el HUD sigue abierto |
+| `Enter` / clic | Salta a la ventana elegida (cambia de monitor/workspace si hace falta) |
+| `Esc` / clic fuera | Cancela |
+
+La tarjeta seleccionada muestra una captura JPEG de la pantalla al abrir; las ventanas de
+un workspace que no está visible muestran su icono y un placeholder. El HUD no mueve
+ventanas: cambia el monitor/workspace activo y enfoca la ventana elegida.
+
+- Archivos: `/usr/share/rakia/switcher/shell.qml` y `/usr/local/bin/rakia-switcher`.
+- Arranca con la sesión desde `[general].autostart` de la configuración de Umbriel.
+- Para desactivarlo, quita `"rakia-switcher daemon"` de `autostart` y los binds
+  `Alt+Tab` / `Alt+Shift+Tab`, y ejecuta `umbriel msg config-reload`. Si solo quitas el
+  autostart, el wrapper arranca el daemon en el primer uso (aproximadamente un segundo).
+- Requisitos: Quickshell (lo instala Noctalia) y `grim`. Si falta alguno, el wrapper cae
+  a `window-focus-last` de Umbriel.
+- Memoria: unos 90 MB en reposo; la captura a pantalla completa se libera al cerrar.
 
 ### Cheatsheet de Umbriel
 

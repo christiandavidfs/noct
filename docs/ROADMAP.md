@@ -62,6 +62,8 @@ impacto, no por dificultad.
 - [ ] Plymouth + tema GRUB + greeter con la marca Kepler.
 - [ ] Bloqueo de pantalla al suspender y al cerrar sesión.
 - [x] Documentación offline en `/usr/share/doc/noga` (README, INSTALL, ROADMAP).
+- [x] **Alt+Tab global**: HUD 3D con todas las ventanas de todos los monitores y
+      workspaces, orden por uso reciente y salto directo (Quickshell).
 - [ ] Fuentes, iconos, cursores, sonidos y OSD coherentes.
 - [ ] Fondos propios y pantalla de bienvenida.
 
