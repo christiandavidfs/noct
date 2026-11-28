@@ -669,14 +669,18 @@ pick_app() {
 
 # Ajusta los atajos a las apps que el usuario ya tiene instaladas.
 map_apps_in_config() {
-  local cfg="$1" app
-  app="$(pick_app kitty foot alacritty konsole gnome-terminal 2>/dev/null || true)"
-  [ -n "$app" ] && sed -i "s|spawn foot|spawn $app|g" "$cfg"
-  app="$(pick_app nautilus thunar dolphin pcmanfm nemo 2>/dev/null || true)"
-  [ -n "$app" ] && sed -i "s|spawn thunar|spawn $app|g" "$cfg"
-  app="$(pick_app brave brave-browser firefox chromium google-chrome-stable 2>/dev/null || true)"
-  if [ -n "$app" ]; then
-    sed -i "s|spawn brave|spawn $app|g" "$cfg"
+  local cfg="$1" term fm browser
+  term="$(pick_app kitty foot alacritty konsole gnome-terminal 2>/dev/null || true)"
+  fm="$(pick_app nautilus thunar dolphin pcmanfm nemo 2>/dev/null || true)"
+  browser="$(pick_app brave brave-browser firefox chromium google-chrome-stable 2>/dev/null || true)"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    log "$(say "Would map keybinds: terminal=${term:-none} files=${fm:-none} browser=${browser:-none}" "Mapearía atajos: terminal=${term:-ninguna} archivos=${fm:-ninguno} navegador=${browser:-ninguno}")"
+    return 0
+  fi
+  [ -n "$term" ] && sed -i "s|spawn foot|spawn $term|g" "$cfg"
+  [ -n "$fm" ] && sed -i "s|spawn thunar|spawn $fm|g" "$cfg"
+  if [ -n "$browser" ]; then
+    sed -i "s|spawn brave|spawn $browser|g" "$cfg"
   else
     warn "$(say 'No browser found; Mod+B will do nothing until one is installed' 'No hay navegador; Mod+B no hará nada hasta instalar uno')"
   fi
@@ -735,8 +739,8 @@ PY
     else
       warn "$(say 'python3 is missing; add autostart = ["noctalia"] to [general] in %s' 'python3 no está; añade autostart = ["noctalia"] a [general] en %s' "$cfg")"
     fi
-    map_apps_in_config "$cfg"
   fi
+  map_apps_in_config "$cfg"
 }
 
 RAKIA_SHARE="$PREFIX/share/rakia"
@@ -896,11 +900,20 @@ configure_wallpaper() {
 migrate_umbriel_syntax() {
   [ "$MIGRATE" -eq 1 ] || return 0
   need_cmd umbriel || return 0
-  # Solo migramos si el Umbriel instalado ya usa la sintaxis con espacios.
-  if ! umbriel msg --help 2>/dev/null | grep -q 'workspace-switch <workspace>'; then
-    log "$(say 'Old Umbriel detected; keeping the current keybind syntax' 'Umbriel antiguo detectado; se conserva la sintaxis de atajos')"
-    return 0
-  fi
+  # Solo migramos si el Umbriel instalado usa la sintaxis antigua (<workspace>).
+  local help
+  help="$(umbriel msg --help 2>/dev/null || true)"
+  case "$help" in
+    *'workspace-switch <direction>'*)
+      log "$(say 'Current Umbriel syntax; no migration needed' 'Umbriel actual; no hace falta migrar atajos')"
+      return 0
+      ;;
+    *'workspace-switch <workspace>'*) ;;
+    *)
+      log "$(say 'Umbriel does not announce workspace-switch; skipping migration' 'Umbriel no anuncia workspace-switch; se omite la migración')"
+      return 0
+      ;;
+  esac
   [ "$DRY_RUN" -eq 1 ] && { log "$(say 'Would migrate the Umbriel keybind syntax' 'Migraría la sintaxis de atajos de Umbriel')"; return 0; }
   if ! need_cmd python3; then
     warn "$(say 'python3 is missing; skipping keybind migration' 'python3 no está; se omite la migración de atajos')"
