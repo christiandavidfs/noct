@@ -44,6 +44,7 @@ MIGRATE=1
 WITH_GREETER=0
 WITH_UDISKS=1
 HIDE_GREETER_LOGO=1
+KEEP_CONFIG=0
 DEBIAN_REPO_READY=0
 SUSE_REPO_READY=0
 WALLPAPER_MODE=""
@@ -93,6 +94,7 @@ Opciones:
   --no-umbriel              No instala/actualiza Umbriel
   --no-udisks               No configura el montaje automático de USB
   --keep-greeter-logo       No oculta el logo del greeter de Noctalia
+  --keep-config             Conserva la config actual de Umbriel/Noctalia (no aplica Rakia)
   --from-source             Fuerza compilación de Noctalia y Umbriel
   --wallpaper fixed|bing-daily
   --wallpaper-path RUTA     Wallpaper fijo a aplicar
@@ -129,6 +131,7 @@ Options:
   --no-umbriel              Do not install/update Umbriel
   --no-udisks               Do not configure automatic USB mounting
   --keep-greeter-logo       Keep the Noctalia greeter logo
+  --keep-config             Keep the current Umbriel/Noctalia config (do not apply Rakia)
   --from-source             Force Noctalia and Umbriel source builds
   --wallpaper fixed|bing-daily
   --wallpaper-path PATH     Fixed wallpaper to apply
@@ -198,6 +201,7 @@ while [ $# -gt 0 ]; do
     --no-umbriel) WITH_UMBRIEL=0 ;;
     --no-udisks) WITH_UDISKS=0 ;;
     --keep-greeter-logo) HIDE_GREETER_LOGO=0 ;;
+    --keep-config) KEEP_CONFIG=1 ;;
     --from-source) FROM_SOURCE=1 ;;
     --wallpaper) shift; [ $# -gt 0 ] || die "$(say '--wallpaper needs fixed or bing-daily' '--wallpaper necesita fixed o bing-daily')"; WALLPAPER_MODE="$1" ;;
     --wallpaper-path) shift; [ $# -gt 0 ] || die "$(say '--wallpaper-path needs a path' '--wallpaper-path necesita una ruta')"; WALLPAPER_PATH="$1" ;;
@@ -654,7 +658,18 @@ NOCT_BIN="$PREFIX/bin/noct"
 
 ensure_umbriel_config() {
   local cfg="$HOME/.config/umbriel/config.toml"
-  [ -f "$cfg" ] && return 0
+  if [ -f "$cfg" ]; then
+    if [ "$KEEP_CONFIG" -eq 1 ]; then
+      log "$(say 'Keeping the current Umbriel config (--keep-config)' 'Se conserva la configuración actual de Umbriel (--keep-config)')"
+      return 0
+    fi
+    if [ "$DRY_RUN" -eq 1 ]; then
+      log "$(say 'Would back up the current Umbriel config and install Rakia defaults' 'Guardaría la configuración actual de Umbriel e instalaría la de Rakia')"
+    else
+      cp -a "$cfg" "$cfg.bak.$(date +%Y%m%d%H%M%S)"
+      log "$(say 'Umbriel config backed up; installing Rakia defaults' 'Configuración de Umbriel guardada; instalando la de Rakia')"
+    fi
+  fi
   local example=""
   for candidate in \
     "$REPO_DIR/iso/profile/airootfs/etc/skel/.config/umbriel/config.toml" \
@@ -706,7 +721,15 @@ install_rakia_assets() {
 ensure_noctalia_config() {
   local cfg="$HOME/.config/noctalia/config.toml"
   local src="$REPO_DIR/iso/profile/airootfs/etc/skel/.config/noctalia/config.toml"
-  [ -f "$cfg" ] && return 0
+  if [ -f "$cfg" ]; then
+    if [ "$KEEP_CONFIG" -eq 1 ]; then
+      log "$(say 'Keeping the current Noctalia config (--keep-config)' 'Se conserva la configuración actual de Noctalia (--keep-config)')"
+      return 0
+    fi
+    if [ "$DRY_RUN" -eq 0 ]; then
+      cp -a "$cfg" "$cfg.bak.$(date +%Y%m%d%H%M%S)"
+    fi
+  fi
   [ -f "$src" ] || return 0
   [ "$DRY_RUN" -eq 1 ] && { log "$(say 'Would install the Rakia Noctalia config' 'Instalaría la configuración de Noctalia de Rakia')"; return 0; }
   mkdir -p "$HOME/.config/noctalia"
@@ -1078,9 +1101,6 @@ configure_noct() {
   ensure_umbriel_config
   ensure_noctalia_config
   run "$NOCT_BIN" doctor --fix || true
-  if [ ! -f "$HOME/.config/umbriel/noct/effects.toml" ]; then
-    run "$NOCT_BIN" effects apply mono || true
-  fi
   run "$NOCT_BIN" effects widget || true
   configure_screenshot_keys
   install_theme_watcher
