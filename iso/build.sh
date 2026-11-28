@@ -123,7 +123,7 @@ mkdir -p -- "$STAGE"
 cp -a -- "$PROFILE/." "$STAGE/"
 
 # Documentación offline dentro del sistema live/instalado.
-for doc in README.md docs/INSTALL.md docs/ROADMAP.md; do
+for doc in README.md docs/INSTALL.md docs/INSTALL.es.md docs/ROADMAP.md; do
   [[ -f "$REPO_DIR/$doc" ]] || continue
   install -Dm644 -- "$REPO_DIR/$doc" "$STAGE/airootfs/usr/share/doc/noga/$(basename -- "$doc")"
 done
