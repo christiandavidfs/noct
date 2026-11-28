@@ -599,7 +599,9 @@ ensure_umbriel_config() {
   local cfg="$HOME/.config/umbriel/config.toml"
   [ -f "$cfg" ] && return 0
   local example=""
-  for candidate in /usr/share/umbriel/config.toml /usr/local/share/umbriel/config.toml \
+  for candidate in \
+    "$REPO_DIR/iso/profile/airootfs/etc/skel/.config/umbriel/config.toml" \
+    /usr/share/umbriel/config.toml /usr/local/share/umbriel/config.toml \
     "$PREFIX/share/umbriel/config.toml"; do
     if [ -f "$candidate" ]; then example="$candidate"; break; fi
   done
@@ -622,7 +624,36 @@ PY
     else
       warn "$(say 'python3 is missing; add autostart = ["noctalia"] to [general] in %s' 'python3 no está; añade autostart = ["noctalia"] a [general] en %s' "$cfg")"
     fi
+    # Rakia abre Brave con Mod+B; si no está, se usa el primer navegador disponible.
+    if ! need_cmd brave; then
+      local browser
+      for browser in firefox chromium google-chrome-stable; do
+        if need_cmd "$browser"; then
+          sed -i "s|spawn brave|spawn $browser|g" "$cfg"
+          break
+        fi
+      done
+    fi
   fi
+}
+
+RAKIA_SHARE="$PREFIX/share/rakia"
+
+install_rakia_assets() {
+  local src="$REPO_DIR/iso/profile/airootfs/usr/share/rakia"
+  [ -d "$src" ] || return 0
+  run mkdir -p "$RAKIA_SHARE"
+  run cp -a "$src/." "$RAKIA_SHARE/"
+}
+
+ensure_noctalia_config() {
+  local cfg="$HOME/.config/noctalia/config.toml"
+  local src="$REPO_DIR/iso/profile/airootfs/etc/skel/.config/noctalia/config.toml"
+  [ -f "$cfg" ] && return 0
+  [ -f "$src" ] || return 0
+  [ "$DRY_RUN" -eq 1 ] && { log "$(say 'Would install the Rakia Noctalia config' 'Instalaría la configuración de Noctalia de Rakia')"; return 0; }
+  mkdir -p "$HOME/.config/noctalia"
+  sed "s|/usr/share/rakia|$RAKIA_SHARE|g" "$src" >"$cfg"
 }
 
 install_theme_watcher() {
@@ -986,7 +1017,9 @@ PY
 
 configure_noct() {
   log "$(say 'Configuring Noct' 'Configuración de Noct')"
+  install_rakia_assets
   ensure_umbriel_config
+  ensure_noctalia_config
   run "$NOCT_BIN" doctor --fix || true
   if [ ! -f "$HOME/.config/umbriel/noct/effects.toml" ]; then
     run "$NOCT_BIN" effects apply mono || true
