@@ -656,6 +656,32 @@ ensure_cmd() {
 
 NOCT_BIN="$PREFIX/bin/noct"
 
+pick_app() {
+  local candidate
+  for candidate in "$@"; do
+    if need_cmd "$candidate"; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Ajusta los atajos a las apps que el usuario ya tiene instaladas.
+map_apps_in_config() {
+  local cfg="$1" app
+  app="$(pick_app kitty foot alacritty konsole gnome-terminal 2>/dev/null || true)"
+  [ -n "$app" ] && sed -i "s|spawn foot|spawn $app|g" "$cfg"
+  app="$(pick_app nautilus thunar dolphin pcmanfm nemo 2>/dev/null || true)"
+  [ -n "$app" ] && sed -i "s|spawn thunar|spawn $app|g" "$cfg"
+  app="$(pick_app brave brave-browser firefox chromium google-chrome-stable 2>/dev/null || true)"
+  if [ -n "$app" ]; then
+    sed -i "s|spawn brave|spawn $app|g" "$cfg"
+  else
+    warn "$(say 'No browser found; Mod+B will do nothing until one is installed' 'No hay navegador; Mod+B no hará nada hasta instalar uno')"
+  fi
+}
+
 ensure_umbriel_config() {
   local cfg="$HOME/.config/umbriel/config.toml"
   if [ -f "$cfg" ]; then
@@ -709,16 +735,7 @@ PY
     else
       warn "$(say 'python3 is missing; add autostart = ["noctalia"] to [general] in %s' 'python3 no está; añade autostart = ["noctalia"] a [general] en %s' "$cfg")"
     fi
-    # Rakia abre Brave con Mod+B; si no está, se usa el primer navegador disponible.
-    if ! need_cmd brave; then
-      local browser
-      for browser in firefox chromium google-chrome-stable; do
-        if need_cmd "$browser"; then
-          sed -i "s|spawn brave|spawn $browser|g" "$cfg"
-          break
-        fi
-      done
-    fi
+    map_apps_in_config "$cfg"
   fi
 }
 
