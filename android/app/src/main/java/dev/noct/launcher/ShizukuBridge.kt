@@ -7,6 +7,8 @@ import android.content.pm.PackageManager
 import android.os.IBinder
 import rikka.shizuku.Shizuku
 
+const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
+
 /** Puente con Shizuku: lista de tareas reales y cambio sin relanzar. */
 object ShizukuBridge {
 

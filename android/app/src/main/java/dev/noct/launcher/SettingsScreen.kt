@@ -1,6 +1,7 @@
 package dev.noct.launcher
 
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -295,6 +296,7 @@ fun SettingsScreen(
             item {
                 val context = LocalContext.current
                 var state by remember { mutableIntStateOf(-1) }
+                var tick by remember { mutableIntStateOf(0) }
                 LaunchedEffect(Unit) {
                     while (true) {
                         state = when {
@@ -302,15 +304,26 @@ fun SettingsScreen(
                             !ShizukuBridge.hasPermission() -> 1
                             else -> 2
                         }
+                        tick++
                         delay(1500)
                     }
                 }
-                val running = state != 0
-                val granted = state == 2
+                val installed = remember(tick, state) {
+                    runCatching {
+                        context.packageManager.getPackageInfo(SHIZUKU_PACKAGE, 0)
+                    }.isSuccess
+                }
                 Text(
                     text = when (state) {
-                        0 ->
-                            "Shizuku no está en ejecución. Ábrelo y arráncalo (depuración inalámbrica o ADB)."
+                        0 -> if (installed) {
+                            "Shizuku está instalado pero no en ejecución. Ábrelo y arráncalo " +
+                                "(depuración inalámbrica o ADB).\n\n" +
+                                "Consejo: una vez arrancado puedes desactivar la depuración USB; " +
+                                "Shizuku sigue funcionando hasta reiniciar el móvil."
+                        } else {
+                            "Shizuku no está instalado. Es necesario para cambiar de tarea sin " +
+                                "relanzar las apps; sin él, los gestos usan el modo aproximado."
+                        }
                         1 ->
                             "Shizuku está activo, pero Noct no tiene permiso para usarlo."
                         2 ->
@@ -321,11 +334,26 @@ fun SettingsScreen(
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (!running) {
-                    OutlinedButton(
+                when {
+                    !installed -> OutlinedButton(
+                        onClick = {
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://shizuku.rikka.app/download/"),
+                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            runCatching { context.startActivity(intent) }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                    ) {
+                        Text("Instalar Shizuku")
+                    }
+
+                    state == 0 -> OutlinedButton(
                         onClick = {
                             val intent = context.packageManager
-                                .getLaunchIntentForPackage("moe.shizuku.privileged.api")
+                                .getLaunchIntentForPackage(SHIZUKU_PACKAGE)
                             if (intent != null) {
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 runCatching { context.startActivity(intent) }
@@ -337,8 +365,8 @@ fun SettingsScreen(
                     ) {
                         Text("Abrir Shizuku")
                     }
-                } else if (!granted) {
-                    OutlinedButton(
+
+                    state == 1 -> OutlinedButton(
                         onClick = { ShizukuBridge.requestPermission() },
                         modifier = Modifier
                             .fillMaxWidth()
